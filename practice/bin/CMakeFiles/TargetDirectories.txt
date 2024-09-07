@@ -1,8 +1,0 @@
-/programming/ompdart/practice/bin/CMakeFiles/intrinsics_gen.dir
-/programming/ompdart/practice/bin/CMakeFiles/omp_gen.dir
-/programming/ompdart/practice/bin/CMakeFiles/acc_gen.dir
-/programming/ompdart/practice/bin/CMakeFiles/RISCVTargetParserTableGen.dir
-/programming/ompdart/practice/bin/CMakeFiles/clang-tablegen-targets.dir
-/programming/ompdart/practice/bin/CMakeFiles/find-class-decls.dir
-/programming/ompdart/practice/bin/CMakeFiles/edit_cache.dir
-/programming/ompdart/practice/bin/CMakeFiles/rebuild_cache.dir

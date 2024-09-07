@@ -6,12 +6,15 @@
 
 using namespace clang;
 
+SourceManager *sm;
+CompilerInstance *ci;
+
 class FindNamedClassVisitor
   : public RecursiveASTVisitor<FindNamedClassVisitor> {
-public:
+public:  
   explicit FindNamedClassVisitor(ASTContext *Context)
     : Context(Context) {}
-
+  
   bool VisitCXXRecordDecl(CXXRecordDecl *Declaration) {
     if (Declaration->getQualifiedNameAsString() == "n::m::C") {
       FullSourceLoc FullLocation = Context->getFullLoc(Declaration->getBeginLoc());
@@ -20,6 +23,18 @@ public:
                      << FullLocation.getSpellingLineNumber() << ":"
                      << FullLocation.getSpellingColumnNumber() << "\n";
     }
+    return true;
+  }
+
+  bool VisitIfStmt(IfStmt *s){
+    Expr *expr = s->getCond();
+    SourceLocation startLocation = expr->getBeginLoc();
+    SourceLocation endLocation = expr->getEndLoc();
+    CharSourceRange conditionRange = CharSourceRange::getTokenRange(startLocation,endLocation);
+    bool invalid;
+    StringRef str = Lexer::getSourceText(conditionRange,*sm, (*ci).getLangOpts(),&invalid);
+    if(invalid)return false;
+    llvm::outs() << "Condition: " << str << "\n";
     return true;
   }
 
@@ -43,6 +58,11 @@ class FindNamedClassAction : public clang::ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
     clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+    SourceManager &s = Compiler.getASTContext().getSourceManager();
+    clang::CompilerInstance &c = Compiler;
+    sm = &s;
+    ci = &c;
+
     return std::make_unique<FindNamedClassConsumer>(&Compiler.getASTContext());
   }
 };
