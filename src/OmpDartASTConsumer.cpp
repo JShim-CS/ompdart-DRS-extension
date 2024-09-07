@@ -2,6 +2,7 @@
 
 #include "AnalysisUtils.h"
 #include "DirectiveRewriter.h"
+
 #include <string>
 
 using namespace clang;
@@ -14,8 +15,10 @@ OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
       FunctionTrackers(Visitor->getFunctionTrackers()),
       Kernels(Visitor->getTargetRegions()) {
   TheRewriter.setSourceMgr(*SM, Context->getLangOpts());
+
   this->OutFilePath = *OutFilePath;
   this->Aggressive = Aggressive;
+
 }
 
 void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {

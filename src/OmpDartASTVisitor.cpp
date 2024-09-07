@@ -195,7 +195,13 @@ bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   if (!FS->getBeginLoc().isValid() || !SM->isInMainFile(FS->getBeginLoc()))
     return true;
 
-  //added by Junhyung Shim
+  
+  //added by Junhyung Shim, add the expressions and statements into a data structure
+  //switch to get condition variable later on?
+
+  //check if #pragma drd is on top of the for loop using SourceLocation
+  SourceLocation pragmaLine = FS->getSourceRange().getBegin();
+  
   Stmt *init = FS->getInit();
   Expr *inc = FS->getInc();
   Expr *cond = FS->getCond();
