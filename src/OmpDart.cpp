@@ -50,5 +50,6 @@ protected:
 
 }; // end class OmpDartASTAction
 
+//this registers ompdart as a frontend plugin
 static FrontendPluginRegistry::Add<OmpDartASTAction> X("ompdart",
                                                        "target data analysis");
