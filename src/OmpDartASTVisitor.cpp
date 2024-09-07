@@ -2,12 +2,15 @@
 
 #include "clang/AST/ParentMapContext.h"
 
+//added by Junhyung Shim
+#include "clang/Frontend/FrontendAction.h" //for Lexer
+
 #include "CommonUtils.h"
 
 using namespace clang;
 
 OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI)
-    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())) {
+    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI) {
   LastKernel = NULL;
   LastFunction = NULL;
 }
@@ -191,6 +194,33 @@ bool OmpDartASTVisitor::VisitDoStmt(DoStmt *DS) {
 bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   if (!FS->getBeginLoc().isValid() || !SM->isInMainFile(FS->getBeginLoc()))
     return true;
+
+  //added by Junhyung Shim
+  Stmt *init = FS->getInit();
+  Expr *inc = FS->getInc();
+  Expr *cond = FS->getCond();
+  bool invalid;
+
+  SourceLocation initStartLocation = init->getBeginLoc();
+  SourceLocation initEndLocation = init->getEndLoc();
+  CharSourceRange initConditionRange = CharSourceRange::getTokenRange(initStartLocation,initEndLocation);
+  StringRef initstr = Lexer::getSourceText(initConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+
+
+  SourceLocation incStartLocation = inc->getBeginLoc();
+  SourceLocation incEndLocation = inc->getEndLoc();
+  CharSourceRange incConditionRange = CharSourceRange::getTokenRange(incStartLocation,incEndLocation);
+  StringRef incstr = Lexer::getSourceText(incConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+
+
+  SourceLocation condStartLocation = cond->getBeginLoc();
+  SourceLocation condEndLocation = cond->getEndLoc();
+  CharSourceRange condConditionRange = CharSourceRange::getTokenRange(condStartLocation,condEndLocation);
+  StringRef condstr = Lexer::getSourceText(condConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+
+  llvm::outs() << "init: " << initstr << ", condition: " << condstr << ", increment: " << incstr <<"\n";
+
+
   if (!inLastFunction(FS->getBeginLoc()))
     return true;
 

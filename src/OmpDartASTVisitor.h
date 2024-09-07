@@ -13,6 +13,9 @@ private:
   ASTContext *Context;
   SourceManager *SM;
 
+  //added by Junhyung Shim
+  CompilerInstance *CI; 
+
   // each DataTracker keeps track of data access within the scope of a single
   // function
   std::vector<DataTracker *> FunctionTrackers;

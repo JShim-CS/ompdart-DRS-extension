@@ -84,3 +84,4 @@ bool isaTargetKernel(const Stmt *S) {
          isa<OMPTargetTeamsDistributeSimdDirective>(S) ||
          isa<OMPTargetTeamsGenericLoopDirective>(S);
 }
+

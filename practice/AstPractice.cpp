@@ -3,6 +3,9 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
+#include <string>
+#include <fstream>
+#include <vector>
 
 using namespace clang;
 
@@ -69,6 +72,18 @@ public:
 
 int main(int argc, char **argv) {
   if (argc > 1) {
-    clang::tooling::runToolOnCode(std::make_unique<FindNamedClassAction>(), argv[1]);
+    std::ifstream f;
+    try{
+      f.open(argv[1]);
+      std::vector<char> codeData(300);
+      f.read(codeData.data(),300);
+      f.close();
+      std::string code(codeData.begin(),codeData.end());
+      clang::tooling::runToolOnCode(std::make_unique<FindNamedClassAction>(),code.c_str());
+    }catch(...){
+      return 1;
+    }
+
+    
   }
 }
