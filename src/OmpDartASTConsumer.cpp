@@ -11,9 +11,9 @@ using namespace clang;
 
 OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
                                        const std::string *OutFilePath,
-                                       bool Aggressive)
+                                       bool Aggressive, unsigned* drdPragmaLineNumber)
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())),
-      Visitor(new OmpDartASTVisitor(CI)),
+      Visitor(new OmpDartASTVisitor(CI,drdPragmaLineNumber)),
       FunctionTrackers(Visitor->getFunctionTrackers()),
       Kernels(Visitor->getTargetRegions()) {
   TheRewriter.setSourceMgr(*SM, Context->getLangOpts());

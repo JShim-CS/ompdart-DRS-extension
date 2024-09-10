@@ -14,13 +14,13 @@ private:
   std::string OutFilePath;
   bool Aggressive = false;
   std::unique_ptr<DrdpragmaHandler> ptr;
-  unsigned *lineNumber = NULL;
+  unsigned *drdPragmaLineNumber = NULL;
   
 public:
     OmpDartASTAction() {
       this->ptr = std::make_unique<DrdpragmaHandler>();
-      this->lineNumber = (unsigned*) malloc(sizeof(unsigned));
-      this->ptr->lineNumber = this->lineNumber;
+      this->drdPragmaLineNumber = (unsigned*) malloc(sizeof(unsigned));
+      this->ptr->lineNumber = this->drdPragmaLineNumber;
     }
 
 protected:
@@ -29,7 +29,7 @@ protected:
     Preprocessor &PP = CI.getPreprocessor();
     PP.AddPragmaHandler(ptr.get());
     
-    return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive);
+    return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive, this->ptr->lineNumber);
   }
   
    

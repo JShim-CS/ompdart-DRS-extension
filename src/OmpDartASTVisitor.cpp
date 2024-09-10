@@ -12,21 +12,10 @@
 
 using namespace clang;
 
-OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI)
-    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI) {
+OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber)
+    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), drdPragmaLineNumber(drdPragmaLineNumber) {
   LastKernel = NULL;
   LastFunction = NULL;
-
-  std::ifstream tempFile("/programming/ompdart/PRAGMA_LINE_NUMBER.txt");
-
-  if (!tempFile.is_open()) {
-    llvm::outs() << "ERROR at OmpDartASTVisitor.cpp (constructor) quitting program .\n";;
-    exit(0);
-  }
-  std::string lineNumberString;
-  std::getline(tempFile,lineNumberString);
-  this->pragmaLineNumber = static_cast<unsigned int>(std::stoul(lineNumberString));
-  tempFile.close();
 }
 
 bool OmpDartASTVisitor::inLastTargetRegion(SourceLocation Loc) {
@@ -217,16 +206,15 @@ bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   
   SourceLocation ThisLine = FS->getBeginLoc();
 
-  llvm::outs() << "INSIDE FOR STMT: " << this->pragmaLineNumber << "\n";
+  //llvm::outs() << "INSIDE FOR STMT: " << *(this->drdPragmaLineNumber) << "\n";
   
 
   unsigned thisLine = SM->getSpellingLineNumber(ThisLine);
-  //unsigned pragmaLine = SM->getSpellingLineNumber(this->myPragmaHandler->drd_sl);
 
   //llvm::outs() << thisLine <<"\n";
-  //llvm::outs() << pragmaLine << "\n";
+  //llvm::outs() << *(this->drdPragmaLineNumber) << "\n";
 
-  if(thisLine + 1 == 30){
+  if(thisLine == *(this->drdPragmaLineNumber) + 1){
     Stmt *init = FS->getInit();
     Expr *inc = FS->getInc();
     Expr *cond = FS->getCond();

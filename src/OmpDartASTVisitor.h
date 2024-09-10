@@ -15,7 +15,7 @@ private:
   SourceManager *SM;
   //added by Junhyung Shim
   CompilerInstance *CI;
-  unsigned pragmaLineNumber; 
+  unsigned* drdPragmaLineNumber; 
 
   // each DataTracker keeps track of data access within the scope of a single
   // function
@@ -30,10 +30,9 @@ private:
   bool inLastFunction(SourceLocation Loc);
 
 public:
-  //added by Junhyung Shim
-  DrdpragmaHandler* myPragmaHandler;
+  
 
-  explicit OmpDartASTVisitor(CompilerInstance *CI);
+  explicit OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber);
 
   std::vector<DataTracker *> &getFunctionTrackers();
   std::vector<Kernel *> &getTargetRegions(); 

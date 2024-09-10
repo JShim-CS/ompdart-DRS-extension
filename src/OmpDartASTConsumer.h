@@ -21,7 +21,7 @@ class OmpDartASTConsumer : public ASTConsumer {
 
 public:
   explicit OmpDartASTConsumer(CompilerInstance *CI,
-                              const std::string *OutFilePath, bool Aggressive);
+                              const std::string *OutFilePath, bool Aggressive, unsigned* drdPragmaLine);
 
   virtual void HandleTranslationUnit(ASTContext &Context);
 
