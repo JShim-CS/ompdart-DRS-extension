@@ -6,6 +6,9 @@
 #include "clang/Frontend/FrontendAction.h" //for Lexer
 
 #include "CommonUtils.h"
+#include <fstream>
+#include <string>
+
 
 using namespace clang;
 
@@ -13,6 +16,17 @@ OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI)
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI) {
   LastKernel = NULL;
   LastFunction = NULL;
+
+  std::ifstream tempFile("/programming/ompdart/PRAGMA_LINE_NUMBER.txt");
+
+  if (!tempFile.is_open()) {
+    llvm::outs() << "ERROR at OmpDartASTVisitor.cpp (constructor) quitting program .\n";;
+    exit(0);
+  }
+  std::string lineNumberString;
+  std::getline(tempFile,lineNumberString);
+  this->pragmaLineNumber = static_cast<unsigned int>(std::stoul(lineNumberString));
+  tempFile.close();
 }
 
 bool OmpDartASTVisitor::inLastTargetRegion(SourceLocation Loc) {
@@ -200,32 +214,43 @@ bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   //switch to get condition variable later on?
 
   //check if #pragma drd is on top of the for loop using SourceLocation
-  SourceLocation pragmaLine = FS->getSourceRange().getBegin();
   
-  Stmt *init = FS->getInit();
-  Expr *inc = FS->getInc();
-  Expr *cond = FS->getCond();
-  bool invalid;
+  SourceLocation ThisLine = FS->getBeginLoc();
 
-  SourceLocation initStartLocation = init->getBeginLoc();
-  SourceLocation initEndLocation = init->getEndLoc();
-  CharSourceRange initConditionRange = CharSourceRange::getTokenRange(initStartLocation,initEndLocation);
-  StringRef initstr = Lexer::getSourceText(initConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+  llvm::outs() << "INSIDE FOR STMT: " << this->pragmaLineNumber << "\n";
+  
+
+  unsigned thisLine = SM->getSpellingLineNumber(ThisLine);
+  //unsigned pragmaLine = SM->getSpellingLineNumber(this->myPragmaHandler->drd_sl);
+
+  //llvm::outs() << thisLine <<"\n";
+  //llvm::outs() << pragmaLine << "\n";
+
+  if(thisLine + 1 == 30){
+    Stmt *init = FS->getInit();
+    Expr *inc = FS->getInc();
+    Expr *cond = FS->getCond();
+    bool invalid;
+
+    SourceLocation initStartLocation = init->getBeginLoc();
+    SourceLocation initEndLocation = init->getEndLoc();
+    CharSourceRange initConditionRange = CharSourceRange::getTokenRange(initStartLocation,initEndLocation);
+    StringRef initstr = Lexer::getSourceText(initConditionRange,*SM,(*CI).getLangOpts(),&invalid);
 
 
-  SourceLocation incStartLocation = inc->getBeginLoc();
-  SourceLocation incEndLocation = inc->getEndLoc();
-  CharSourceRange incConditionRange = CharSourceRange::getTokenRange(incStartLocation,incEndLocation);
-  StringRef incstr = Lexer::getSourceText(incConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+    SourceLocation incStartLocation = inc->getBeginLoc();
+    SourceLocation incEndLocation = inc->getEndLoc();
+    CharSourceRange incConditionRange = CharSourceRange::getTokenRange(incStartLocation,incEndLocation);
+    StringRef incstr = Lexer::getSourceText(incConditionRange,*SM,(*CI).getLangOpts(),&invalid);
 
 
-  SourceLocation condStartLocation = cond->getBeginLoc();
-  SourceLocation condEndLocation = cond->getEndLoc();
-  CharSourceRange condConditionRange = CharSourceRange::getTokenRange(condStartLocation,condEndLocation);
-  StringRef condstr = Lexer::getSourceText(condConditionRange,*SM,(*CI).getLangOpts(),&invalid);
+    SourceLocation condStartLocation = cond->getBeginLoc();
+    SourceLocation condEndLocation = cond->getEndLoc();
+    CharSourceRange condConditionRange = CharSourceRange::getTokenRange(condStartLocation,condEndLocation);
+    StringRef condstr = Lexer::getSourceText(condConditionRange,*SM,(*CI).getLangOpts(),&invalid);
 
-  llvm::outs() << "init: " << initstr << ", condition: " << condstr << ", increment: " << incstr <<"\n";
-
+    llvm::outs() << "init: " << initstr << ", condition: " << condstr << ", increment: " << incstr <<"\n";
+  }
 
   if (!inLastFunction(FS->getBeginLoc()))
     return true;

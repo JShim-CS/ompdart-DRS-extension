@@ -4,7 +4,6 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 
 #include "OmpDartASTVisitor.h"
-
 using namespace clang;
 
 class OmpDartASTConsumer : public ASTConsumer {
@@ -14,6 +13,8 @@ class OmpDartASTConsumer : public ASTConsumer {
   Rewriter TheRewriter;
   std::string OutFilePath;
   bool Aggressive;
+  
+
 
   std::vector<DataTracker *> &FunctionTrackers;
   std::vector<Kernel *> &Kernels;
@@ -23,6 +24,9 @@ public:
                               const std::string *OutFilePath, bool Aggressive);
 
   virtual void HandleTranslationUnit(ASTContext &Context);
+
+private:
+  CompilerInstance *CI;
 
 }; // end class OmpDartASTConsumer
 

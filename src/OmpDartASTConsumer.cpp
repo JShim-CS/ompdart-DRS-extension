@@ -2,6 +2,8 @@
 
 #include "AnalysisUtils.h"
 #include "DirectiveRewriter.h"
+#include "OmpDart.h"
+
 
 #include <string>
 
@@ -18,10 +20,12 @@ OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
 
   this->OutFilePath = *OutFilePath;
   this->Aggressive = Aggressive;
-
+  this->CI = CI;
 }
 
 void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
+  this->CI->getPreprocessor();
+  
   Visitor->TraverseDecl(Context.getTranslationUnitDecl());
 
   performInterproceduralAnalysis(FunctionTrackers);

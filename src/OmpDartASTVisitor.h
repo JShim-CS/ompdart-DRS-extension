@@ -5,6 +5,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "DataTracker.h"
+#include "DrdpragmaHandler.h"
 
 using namespace clang;
 
@@ -12,9 +13,9 @@ class OmpDartASTVisitor : public RecursiveASTVisitor<OmpDartASTVisitor> {
 private:
   ASTContext *Context;
   SourceManager *SM;
-
   //added by Junhyung Shim
-  CompilerInstance *CI; 
+  CompilerInstance *CI;
+  unsigned pragmaLineNumber; 
 
   // each DataTracker keeps track of data access within the scope of a single
   // function
@@ -29,6 +30,9 @@ private:
   bool inLastFunction(SourceLocation Loc);
 
 public:
+  //added by Junhyung Shim
+  DrdpragmaHandler* myPragmaHandler;
+
   explicit OmpDartASTVisitor(CompilerInstance *CI);
 
   std::vector<DataTracker *> &getFunctionTrackers();
