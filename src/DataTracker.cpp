@@ -524,7 +524,7 @@ int DataTracker::recordCond(const Stmt *S) {
   }
   Conds.push_back(S);
 
-  AccessInfo NewEntry = {};
+  AccessInfo NewEntry = {}; //error? : NewEntry resides on stack
   NewEntry.VD = nullptr;
   NewEntry.S = S;
   NewEntry.Loc = S->getBeginLoc();
