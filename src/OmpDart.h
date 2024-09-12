@@ -22,6 +22,10 @@ public:
       this->drdPragmaLineNumber = (unsigned*) malloc(sizeof(unsigned));
       this->ptr->lineNumber = this->drdPragmaLineNumber;
     }
+    
+    ~OmpDartASTAction(){
+      free(this->drdPragmaLineNumber);
+    }
 
 protected:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,

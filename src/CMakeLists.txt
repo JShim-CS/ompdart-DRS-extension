@@ -11,4 +11,5 @@ add_library(ompdart MODULE
     OmpDartASTVisitor.cpp
     TargetDataRegion.cpp
     DrdpragmaHandler.cpp
+    ControlRegions.cpp
 )

@@ -6,6 +6,7 @@
 
 #include "DataTracker.h"
 #include "DrdpragmaHandler.h"
+#include "ControlRegions.h"
 
 using namespace clang;
 
@@ -16,6 +17,8 @@ private:
   //added by Junhyung Shim
   CompilerInstance *CI;
   unsigned* drdPragmaLineNumber; 
+  ControlRegions *CR;
+
 
   // each DataTracker keeps track of data access within the scope of a single
   // function

@@ -6,8 +6,7 @@
 #include "clang/Frontend/FrontendAction.h" //for Lexer
 
 #include "CommonUtils.h"
-#include <fstream>
-#include <string>
+#include <functional> 
 
 
 using namespace clang;
@@ -16,6 +15,7 @@ OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLi
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), drdPragmaLineNumber(drdPragmaLineNumber) {
   LastKernel = NULL;
   LastFunction = NULL;
+  this->CR = std::make_unique<ControlRegions>().get();
 }
 
 bool OmpDartASTVisitor::inLastTargetRegion(SourceLocation Loc) {
@@ -38,6 +38,20 @@ std::vector<Kernel *> &OmpDartASTVisitor::getTargetRegions() { return Kernels; }
 
 bool OmpDartASTVisitor::VisitStmt(Stmt *S) {
   LastStmt = S;
+  bool hasChild = false;
+
+  for (auto *Child : S->children()) {
+    if (Child) {
+        hasChild = true;
+        break; 
+    }
+  }
+
+  //if curr node is the leaf node
+  if(!hasChild){
+    this->CR->lastSeen = this->CR->lastSeenHeirarchy[this->CR->lastSeen];
+  }
+
   return true;
 }
 
@@ -260,6 +274,32 @@ bool OmpDartASTVisitor::VisitWhileStmt(WhileStmt *WS) {
 bool OmpDartASTVisitor::VisitIfStmt(IfStmt *IS) {
   if (!IS->getBeginLoc().isValid() || !SM->isInMainFile(IS->getBeginLoc()))
     return true;
+
+  //make hash for predicate
+  clang::SourceLocation Loc = IS->getBeginLoc();
+  std::string LocationString = Loc.printToString(*SM);
+  std::size_t hashValue = std::hash<std::string>{}(LocationString);
+
+  //if key does not already exist
+  if(this->CR->predicateMap.find(hashValue) == this->CR->predicateMap.end()){
+    //extract the text
+    clang::SourceLocation StartLoc = IS->getBeginLoc();
+    clang::SourceLocation EndLoc = IS->getEndLoc();
+    clang::SourceRange SourceRange(StartLoc, EndLoc);
+    llvm::StringRef SourceText = clang::Lexer::getSourceText(
+      clang::CharSourceRange::getTokenRange(SourceRange), *SM, clang::LangOptions());
+    //add to the map
+    this->CR->predicateMap[hashValue] = std::make_unique<ControlTreeNode>(SourceText.str(),hashValue).get();
+
+    if(this->CR->lastSeen->id == 0){
+
+    }
+
+  }
+
+
+
+  
   if (!inLastFunction(IS->getBeginLoc()))
     return true;
 

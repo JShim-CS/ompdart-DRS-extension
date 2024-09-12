@@ -11,8 +11,6 @@
 #include "clang/Lex/Pragma.h"
 
 
-#include <stdlib.h>
-
 using namespace clang;
 
 class DrdpragmaHandler : public PragmaHandler {
