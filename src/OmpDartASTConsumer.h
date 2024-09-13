@@ -13,6 +13,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   Rewriter TheRewriter;
   std::string OutFilePath;
   bool Aggressive;
+  unsigned drdPragmaLineNumber;
   
 
 
@@ -27,6 +28,7 @@ public:
 
 private:
   CompilerInstance *CI;
+  std::string getConditionOfLoop(ForStmt &FS);
 
 }; // end class OmpDartASTConsumer
 
