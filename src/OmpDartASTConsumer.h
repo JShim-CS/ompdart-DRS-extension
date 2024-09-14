@@ -13,7 +13,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   Rewriter TheRewriter;
   std::string OutFilePath;
   bool Aggressive;
-  unsigned drdPragmaLineNumber;
+  unsigned *drdPragmaLineNumber;
   
 
 

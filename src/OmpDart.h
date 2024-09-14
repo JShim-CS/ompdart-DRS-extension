@@ -33,6 +33,7 @@ protected:
     Preprocessor &PP = CI.getPreprocessor();
     PP.AddPragmaHandler(ptr.get());
     
+    
     return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive, this->ptr->lineNumber);
   }
   

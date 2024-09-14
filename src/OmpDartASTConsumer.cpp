@@ -16,13 +16,12 @@ OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())),
       Visitor(new OmpDartASTVisitor(CI,drdPragmaLineNumber)),
       FunctionTrackers(Visitor->getFunctionTrackers()),
-      Kernels(Visitor->getTargetRegions()) {
+      Kernels(Visitor->getTargetRegions()), drdPragmaLineNumber(drdPragmaLineNumber) {
   TheRewriter.setSourceMgr(*SM, Context->getLangOpts());
 
   this->OutFilePath = *OutFilePath;
   this->Aggressive = Aggressive;
   this->CI = CI;
-  this->drdPragmaLineNumber = 7;//*drdPragmaLineNumber;
 }
 
 void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
@@ -95,7 +94,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
     std::vector<const Stmt*> loops = DT->getLoops();
     for(const Stmt* s : loops){
       llvm::outs() << "Checking lines: " << (*SM).getSpellingLineNumber(s->getBeginLoc()) << "\n";
-      if((*SM).getSpellingLineNumber(s->getBeginLoc()) == this->drdPragmaLineNumber + 1){
+      if((*SM).getSpellingLineNumber(s->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         TargetFunction = DT;
         break;
       }
@@ -112,7 +111,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
     bool stillSearching = true;
     for(AccessInfo a : ai){
       //foundForLoop
-      if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == this->drdPragmaLineNumber + 1){
+      if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
         
         ForStmt* fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
@@ -189,28 +188,29 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
     StringRef condstr = Lexer::getSourceText(condConditionRange,*SM,(*CI).getLangOpts(),&invalid);
 
     std::string bound1 = initstr.str().substr(initstr.str().find('='));
-    long b1 = 1;
+    long b1 = 0;
+    bool negative = false;
     
     
     for(char c : bound1){
 
 
       if(c == '-'){
-        b1 *= -1;
+         negative = true;
       }
 
       if(c >= '0' && c <= '9'){
-        if(b1 < 0){
-          b1 =  b1*10 - ('c' - '0');
+        if(negative){
+          b1 =  b1*10 - (c - '0');
         }else{
-          b1 = b1*10 + ('c' - '0');
+          b1 = b1*10 + (c - '0');
         } 
       }
 
     }
     //FS.getConditionVariable();
     //llvm::outs() <<"EXECUTED: " << FS.getConditionVariable()->getName().str() <<"\n";
-    std::string indexVar = "i"; //FS.getConditionVariable()->getName().str();
+    std::string indexVar; //FS.getConditionVariable()->getName().str();
     std::string bound2 = condstr.str();
     char code = 0;
     bool increment = false;
@@ -220,69 +220,87 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
       if(bound2.find("<=") > bound2.find(indexVar)){
         code = 1;
         increment = true;
-        bound2 = bound2.substr(bound2.find("<="), bound2.size() - bound2.find("<=") - 1);
-        
+        indexVar = bound2.substr(0, bound2.find("<="));
+        bound2 = bound2.substr(bound2.find("<="), bound2.size() - bound2.find("<="));
       }else{//otherwise, indexVar is on the right side
         code = 2;
         increment = false;
-        bound2 = bound2.substr(0, bound2.find("<=") -1);
+        // 0 1 2 3 4 5 6 7 8 9   size = 10
+        //           < =             size - 5 -2 = 3
+        indexVar = bound2.substr(bound2.find("<=") + 2, bound2.size() - bound2.find("<=") - 2);
+        bound2 = bound2.substr(0, bound2.find("<="));
       }
     }else if(bound2.find(">=") != std::string::npos){
       //indexVar resides on the left side
       if(bound2.find(">=") > bound2.find(indexVar)){
         code = 1;
         increment = false;
-        bound2 = bound2.substr(bound2.find(">="), bound2.size() - bound2.find(">=") - 1);
+        indexVar = bound2.substr(0, bound2.find(">="));
+        bound2 = bound2.substr(bound2.find(">="), bound2.size() - bound2.find(">="));
       }else{//otherwise, indexVar is on the right side
         code = 2;
         increment = true;
-        bound2 = bound2.substr(0, bound2.find(">=") -1);
+        indexVar = bound2.substr(bound2.find(">=") + 2, bound2.size() - bound2.find(">=") - 2);
+        bound2 = bound2.substr(0, bound2.find(">="));
       }
     }else if(bound2.find("<") != std::string::npos){
       //indexVar resides on the left side
       if(bound2.find("<") > bound2.find(indexVar)){
         code = 1;
         increment = true;
-        bound2 = bound2.substr(bound2.find("<"), bound2.size() - bound2.find("<") - 1);
+        indexVar = bound2.substr(0, bound2.find("<"));
+        bound2 = bound2.substr(bound2.find("<"), bound2.size() - bound2.find("<"));
       }else{//otherwise, indexVar is on the right side
         code = 2;
         increment = false;
-        bound2 = bound2.substr(0, bound2.find("<") -1);
+        indexVar = bound2.substr(bound2.find("<") + 1, bound2.size() - bound2.find("<") - 1);
+        bound2 = bound2.substr(0, bound2.find("<"));
       }
     }else if(bound2.find(">") != std::string::npos){
       //indexVar resides on the left side
       if(bound2.find(">") > bound2.find(indexVar)){
         code = 1;
         increment = false;
-        bound2 = bound2.substr(bound2.find(">"), bound2.size() - bound2.find(">") - 1);
+        indexVar = bound2.substr(0, bound2.find(">") - 1);
+        bound2 = bound2.substr(bound2.find(">"), bound2.size() - bound2.find(">"));
+        
       }else{//otherwise, indexVar is on the right side
         code = 2;
         increment = true;
-        bound2 = bound2.substr(0, bound2.find(">") -1);
+        indexVar = bound2.substr(bound2.find(">") + 1, bound2.size() - bound2.find(">") - 1);
+        bound2 = bound2.substr(0, bound2.find(">"));
       }
     }else{ //does not involve an inequality
       bound2 = bound2.substr(0,bound2.find(';'));
       return bound2;
     }
 
+    llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
+    std::string tempIndexVar;
+    for(char c : indexVar){
+      if(c != ' '){
+        tempIndexVar += c;
+      }
+    }
+    indexVar = tempIndexVar;
     
     switch(code){
       case 1:
         if(increment){
           return "(" + indexVar  +" >= " + std::to_string(b1) + ") && "
-              + "(" + indexVar + bound2 + ")";
+              + "(" + indexVar +" "+ bound2 + ")";
         }else{
           return "(" + indexVar  +" <= " + std::to_string(b1) + ") && "
-              + "(" + indexVar + bound2 + ")";
+              + "(" + indexVar + " " + bound2 + ")";
         }
 
       case 2:
         if(increment){
           return "(" + indexVar  +" >= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + indexVar +")";
+              + "(" + bound2 + " " + indexVar +")";
         }else{
           return "(" + indexVar  +" <= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + indexVar +  ")";
+              + "(" + bound2 + " " + indexVar +  ")";
         }
         
     }
