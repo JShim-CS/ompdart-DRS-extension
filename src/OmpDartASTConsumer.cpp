@@ -105,7 +105,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   //dive into targetFunction to map out the predicates of conditionals
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
-
+  std::stack<std::string> predicateStack;
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
     bool stillSearching = true;
@@ -113,13 +113,44 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
       //foundForLoop
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
-        
         ForStmt* fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string str = this->getConditionOfLoop(*fs);
         predicate_string.push_back(str);
-        break;
+        continue;
       }
-      if(!stillSearching)break;
+      if(!stillSearching){
+
+        if(isa<IfStmt>(*(a.S))){
+          const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
+          SourceRange condRange = cond->getSourceRange();
+          StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
+                                              (*SM), (*CI).getLangOpts());
+          if(condText.str().find(";") == std::string::npos){
+            predicateStack.push(condText.str());
+          }
+          continue;
+        }
+        if(a.Flags == A_WRONLY){
+          bool invalid;
+          SourceLocation bloc = a.S->getBeginLoc();
+          SourceLocation eloc = a.S->getEndLoc();
+          CharSourceRange arrRange = CharSourceRange::getTokenRange(bloc,eloc);
+          StringRef sr =  Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+          // Use the SourceManager to extract the text corresponding to the source range
+          //StringRef text = Lexer::getSourceText(CharSourceRange::getTokenRange(exprRange), (*SM), CI->getASTContext().getLangOpts());
+          llvm::outs() <<  "(" << sr.str() <<" requires: ";
+          while(!predicateStack.empty()){
+            if(predicateStack.size() == 1){
+              llvm::outs() << predicateStack.top() << ")\n" ;
+            }else{
+              llvm::outs() << predicateStack.top() << " AND " ;
+            }
+            //llvm::outs() << predicateStack.top() << " AND " ;
+            predicateStack.pop();
+          }
+        }
+
+      }
     }
 
     if(!stillSearching){
