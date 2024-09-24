@@ -4,6 +4,12 @@
 #include "DirectiveRewriter.h"
 #include "OmpDart.h"
 
+#include "clang/AST/ASTContext.h"
+#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/Frontend/FrontendAction.h"
+#include "clang/Tooling/Tooling.h"
+#include "clang/AST/ParentMapContext.h"
+
 
 #include <string>
 #include <stack>
@@ -118,35 +124,92 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
         predicate_string.push_back(str);
         continue;
       }
+      
       if(!stillSearching){
 
         if(isa<IfStmt>(*(a.S))){
+          
           const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
+          const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
           SourceRange condRange = cond->getSourceRange();
+
           StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
                                               (*SM), (*CI).getLangOpts());
+          //for loop condition gets detected as if statement
+          //to prevent it from being analyzed, we check if there exists a semicolon
           if(condText.str().find(";") == std::string::npos){
-            predicateStack.push(condText.str());
+            const Stmt *elseStmt = NULL;//(dyn_cast<IfStmt>(a.S))->getElse();
+            //^^^ get parent's else statement
+            std::string requiredCondition = "";
+            for(const auto Parent : Parents){
+              const Stmt *stmt = Parent.get<Stmt>();
+              if(stmt){
+                  //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
+                  if(isa<IfStmt>(*stmt)){
+                    elseStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                    if(elseStmt)break;
+                  }
+              }
+            }
+
+            if (elseStmt && a.S == elseStmt){
+              requiredCondition = "~(" + condText.str() + ")";
+            }else{
+              requiredCondition = condText.str();
+            }
+            
+            std::stack<const DynTypedNodeList*> nodeStack;
+            nodeStack.push(&Parents);
+            //llvm::outs()<<"my node is: " << a.S->getStmtClassName()<<", " << condText.str() <<"\n";
+            while(!nodeStack.empty()){
+              const auto *tempParents = nodeStack.top();
+              nodeStack.pop();
+              for (const auto Parent : *tempParents){
+                const Stmt *stmt = Parent.get<Stmt>();
+                
+                if(stmt){
+                  //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
+                  if(isa<IfStmt>(*stmt)){
+                    elseStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                    const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
+                    condRange = condTemp->getSourceRange();
+                    condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
+                                              (*SM), (*CI).getLangOpts());
+                    if(elseStmt && a.S == elseStmt){
+                      requiredCondition += (" AND ~(" + condText.str() +")");
+                    }else{
+                      requiredCondition += (" AND " + condText.str());
+                    }
+                    
+                    llvm::outs()<<condText.str()<<"\n";
+                  }
+                  const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
+                  nodeStack.push(&ThingToPush);
+                  
+                }
+              }
+               
+            }
+            //requiredCondition += ")\n";
+            predicateStack.push(requiredCondition);
+            //llvm::outs()<< condText.str() <<"\n\n";
+            
           }
+        
           continue;
         }
+
         if(a.Flags == A_WRONLY){
           bool invalid;
           SourceLocation bloc = a.S->getBeginLoc();
           SourceLocation eloc = a.S->getEndLoc();
           CharSourceRange arrRange = CharSourceRange::getTokenRange(bloc,eloc);
           StringRef sr =  Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
-          // Use the SourceManager to extract the text corresponding to the source range
-          //StringRef text = Lexer::getSourceText(CharSourceRange::getTokenRange(exprRange), (*SM), CI->getASTContext().getLangOpts());
-          llvm::outs() <<  "(" << sr.str() <<" requires: ";
-          while(!predicateStack.empty()){
-            if(predicateStack.size() == 1){
-              llvm::outs() << predicateStack.top() << ")\n" ;
-            }else{
-              llvm::outs() << predicateStack.top() << " AND " ;
-            }
-            //llvm::outs() << predicateStack.top() << " AND " ;
+          if(!predicateStack.empty()){
+            llvm::outs() <<  "(" << sr.str() <<" requires: ";
+            llvm::outs() << predicateStack.top() << " ) \n";
             predicateStack.pop();
+            //requiredCondition = "";
           }
         }
 
