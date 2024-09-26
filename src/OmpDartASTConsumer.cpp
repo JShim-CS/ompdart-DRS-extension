@@ -131,6 +131,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
           
           const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
           const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
+          
           SourceRange condRange = cond->getSourceRange();
 
           StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
@@ -151,9 +152,15 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
                   }
               }
             }
-
-            if (elseStmt && a.S == elseStmt){
-              requiredCondition = "~(" + condText.str() + ")";
+            // bool isElseIf = false;
+            // for(const Stmt* ch : (a.S)->children()){
+            //   if(isa<IfStmt>(*ch) && (dyn_cast<IfStmt>(ch))->getElse() && ){
+            //     isElseIf = true;
+            //     break;
+            //   }
+            // }
+            if (elseStmt &&  !(dyn_cast<IfStmt>(elseStmt))){
+              requiredCondition = "!(" + condText.str() + ")";
             }else{
               requiredCondition = condText.str();
             }
@@ -176,12 +183,12 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
                     condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
                                               (*SM), (*CI).getLangOpts());
                     if(elseStmt && a.S == elseStmt){
-                      requiredCondition += (" AND ~(" + condText.str() +")");
+                      requiredCondition += (" AND !(" + condText.str() +")");
                     }else{
                       requiredCondition += (" AND " + condText.str());
                     }
                     
-                    llvm::outs()<<condText.str()<<"\n";
+                    //llvm::outs()<<condText.str()<<"\n";
                   }
                   const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
                   nodeStack.push(&ThingToPush);
