@@ -131,14 +131,8 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
       
       if(!stillSearching){
 
-        if (isa<CompoundStmt>(*(a.S))){
-          const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
-          for(const auto Parent : Parents){
-            const Stmt *stmt = Parent.get<Stmt>();
 
-          }
-
-        }else if(isa<IfStmt>(*(a.S))){
+        if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           
           const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
           const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
@@ -147,52 +141,56 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 
           StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
                                               (*SM), (*CI).getLangOpts());
-          //for loop condition gets detected as if statement
-          //to prevent it from being analyzed, we check if there exists a semicolon
-          if(condText.str().find(";") == std::string::npos){
-            std::string requiredCondition = "(" + condText.str() + ")";
-            
-            
-            std::stack<const DynTypedNodeList*> nodeStack;
-            nodeStack.push(&Parents);
-            //llvm::outs()<<"my node is: " << a.S->getStmtClassName()<<", " << condText.str() <<"\n";
-            const Stmt *elseIfStmt = NULL;//(dyn_cast<IfStmt>(a.S))->getElse();
-            //^^^ get parent's else statement
-
-            while(!nodeStack.empty()){
-              const auto *tempParents = nodeStack.top();
-              nodeStack.pop();
-              for (const auto Parent : *tempParents){
-                const Stmt *stmt = Parent.get<Stmt>();
-                
-                if(stmt){
-                  //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
-                  if(isa<IfStmt>(*stmt)){
-                    elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
-                    const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
-                    condRange = condTemp->getSourceRange();
-                    condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
-                                              (*SM), (*CI).getLangOpts());
-                    if(elseIfStmt && a.S == elseIfStmt){
-                      requiredCondition += (" AND !(" + condText.str() +")");
-                    }else{
-                      requiredCondition += (" AND " + condText.str());
-                    }
-                    
-                    //llvm::outs()<<condText.str()<<"\n";
-                  }
-                  const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
-                  nodeStack.push(&ThingToPush);
-                  
-                }
-              }
-               
-            }
-            //requiredCondition += ")\n";
-            predicateStack.push(requiredCondition);
-            //llvm::outs()<< condText.str() <<"\n\n";
-            
+          
+          std::string requiredCondition = "";
+          if(a.Barrier == CondFallback){
+            requiredCondition += "!(" + condText.str() + ")";
+          }else{
+            requiredCondition += "(" + condText.str() + ")";
           }
+           
+          
+          
+          std::stack<const DynTypedNodeList*> nodeStack;
+          nodeStack.push(&Parents);
+          //llvm::outs()<<"my node is: " << a.S->getStmtClassName()<<", " << condText.str() <<"\n";
+          const Stmt *elseIfStmt = NULL;//(dyn_cast<IfStmt>(a.S))->getElse();
+          //^^^ get parent's else statement
+
+          while(!nodeStack.empty()){
+            const auto *tempParents = nodeStack.top();
+            nodeStack.pop();
+            for (const auto Parent : *tempParents){
+              const Stmt *stmt = Parent.get<Stmt>();
+              
+              if(stmt){
+                //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
+                if(isa<IfStmt>(*stmt)){
+                  elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                  const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
+                  condRange = condTemp->getSourceRange();
+                  condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
+                                            (*SM), (*CI).getLangOpts());
+                  if(elseIfStmt && a.S == elseIfStmt){
+                    requiredCondition += (" AND !(" + condText.str() +")");
+                  }else{
+                    requiredCondition += (" AND " + condText.str());
+                  }
+                  
+                  //llvm::outs()<<condText.str()<<"\n";
+                }
+                const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
+                nodeStack.push(&ThingToPush);
+                
+              }
+            }
+              
+          }
+          //requiredCondition += ")\n";
+          predicateStack.push(requiredCondition);
+          //llvm::outs()<< condText.str() <<"\n\n";
+            
+          
         
           continue;
         }

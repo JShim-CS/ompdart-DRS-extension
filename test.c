@@ -7,13 +7,13 @@ void func(){
     #pragma drd
     for(int i = 0; i < 1000; i++){
         if(i < 20 ){
-            // if(i%2 == 0){
+             if(i%2 == 0){
                 a[i] = 10;
-            // }else if(i%2 == 1){
-            //     a[i] = 15;
-            // }else{
-            //     a[i] = 16;
-            // }
+             }else if(i%2 == 1){
+                 a[i] = 15;
+             }else{
+                 a[i] = 16;
+             }
         }else if(i < 40){
             a[i] = 30;
         }else{
