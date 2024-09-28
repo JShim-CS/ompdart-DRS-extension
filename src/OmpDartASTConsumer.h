@@ -29,6 +29,9 @@ public:
 private:
   CompilerInstance *CI;
   std::string getConditionOfLoop(ForStmt &FS, std::string &indexV);
+  void recordReadAndWrite();
+  std::string setStringForRegion(const Expr *exp, int v);
+  std::string recursivelySetTheString(const Expr *exp, int v);
 
 }; // end class OmpDartASTConsumer
 

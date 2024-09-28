@@ -411,3 +411,159 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &ind
 
     return "";
   }
+
+void OmpDartASTConsumer::recordReadAndWrite(){
+  DataTracker *TargetFunction = NULL;
+
+  llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << this->drdPragmaLineNumber << "\n";
+  for(DataTracker *DT : FunctionTrackers){
+    std::vector<const Stmt*> loops = DT->getLoops();
+    for(const Stmt* s : loops){
+      llvm::outs() << "Checking lines: " << (*SM).getSpellingLineNumber(s->getBeginLoc()) << "\n";
+      if((*SM).getSpellingLineNumber(s->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
+        TargetFunction = DT;
+        break;
+      }
+    }
+    if(TargetFunction)break;
+  }
+
+  //dive into targetFunction to map out the predicates of conditionals
+  std::stack<Stmt*> predicates;
+  std::vector<std::string> predicate_string;
+  std::stack<std::string> predicateStack;
+  std::unordered_map<const Stmt*, char> alreadyVisitedMap;
+
+  if(TargetFunction){
+    std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
+    bool stillSearching = true;
+    std::string indexV = "";
+    for(AccessInfo a : ai){
+      if(alreadyVisitedMap.find(a.S) != alreadyVisitedMap.end())continue;
+      //foundForLoop
+      if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
+        stillSearching = false;
+        ForStmt* fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
+        std::string str = this->getConditionOfLoop(*fs,indexV);
+        indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
+        predicate_string.push_back(str);
+        continue;
+      }
+      
+      if(!stillSearching){
+
+
+        if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
+          
+          const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
+          const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
+          
+          SourceRange condRange = cond->getSourceRange();
+
+          StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
+                                              (*SM), (*CI).getLangOpts());
+          
+          std::string requiredCondition = "";
+          if(a.Barrier == CondFallback){
+            requiredCondition += "!(" + condText.str() + ")";
+          }else{
+            requiredCondition += "(" + condText.str() + ")";
+          }
+           
+          
+          
+          std::stack<const DynTypedNodeList*> nodeStack;
+          nodeStack.push(&Parents);
+          //llvm::outs()<<"my node is: " << a.S->getStmtClassName()<<", " << condText.str() <<"\n";
+          const Stmt *elseIfStmt = NULL;//(dyn_cast<IfStmt>(a.S))->getElse();
+          //^^^ get parent's else statement
+
+          while(!nodeStack.empty()){
+            const auto *tempParents = nodeStack.top();
+            nodeStack.pop();
+            for (const auto Parent : *tempParents){
+              const Stmt *stmt = Parent.get<Stmt>();
+              
+              if(stmt){
+                //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
+                if(isa<IfStmt>(*stmt)){
+                  elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                  const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
+                  condRange = condTemp->getSourceRange();
+                  condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
+                                            (*SM), (*CI).getLangOpts());
+                  if(elseIfStmt && a.S == elseIfStmt){
+                    requiredCondition += (" AND !(" + condText.str() +")");
+                  }else{
+                    requiredCondition += (" AND " + condText.str());
+                  }
+                  
+                  //llvm::outs()<<condText.str()<<"\n";
+                }
+                const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
+                nodeStack.push(&ThingToPush);
+                
+              }
+            }
+              
+          }
+          //requiredCondition += ")\n";
+          predicateStack.push(requiredCondition);
+          //llvm::outs()<< condText.str() <<"\n\n";
+            
+          
+        
+          continue;
+        }
+
+        if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
+          bool invalid;
+          SourceLocation bloc = a.S->getBeginLoc();
+          SourceLocation eloc = a.S->getEndLoc();
+          CharSourceRange arrRange = CharSourceRange::getTokenRange(bloc,eloc);
+          StringRef sr =  Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+          std::string exp = sr.str();
+          exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
+          
+          if(exp == indexV)continue;
+          if(!predicateStack.empty()){
+            llvm::outs() <<  "(" << exp <<" requires: ";
+            llvm::outs() << predicateStack.top() << " ) ";
+            if(a.ArraySubscript){
+              const Expr *base = a.ArraySubscript->getBase();
+              bloc = base->getBeginLoc();
+              eloc = base->getEndLoc();
+              arrRange = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+              sr = Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+              llvm::outs() << "array name is: " << sr.str() <<" ";
+              //It is easier to get the array index from the source text
+            }
+            llvm::outs() << "\n";
+            predicateStack.pop();
+            //requiredCondition = "";
+          }
+        }
+
+      }
+    }
+
+    if(!stillSearching){
+      llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
+      llvm::outs() << "indexVAR: " << indexV << "\n";
+    }
+    
+  }
+
+}
+
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v){
+  if (const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)) {
+    std::string op = binOp->getOpcodeStr().str();
+    std::string left = this->recursivelySetTheString(binOp->getLHS(),v);
+    std::string right = this->recursivelySetTheString(binOp->getRHS(),v);      
+  }
+}
+
+std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v){
+
+}
