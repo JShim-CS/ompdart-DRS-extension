@@ -3,12 +3,13 @@
 void func(){
     
     int a[1000];
-
+    int v;
     #pragma drd
     for(int i = 0; i < 1000; i++){
         if(i < 20 ){
              if(i%2 == 0){
                 a[i] = 10;
+                v += 10;
              }else if(i%2 == 1){
                  a[i] = 15;
              }else{

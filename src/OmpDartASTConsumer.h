@@ -28,7 +28,7 @@ public:
 
 private:
   CompilerInstance *CI;
-  std::string getConditionOfLoop(ForStmt &FS);
+  std::string getConditionOfLoop(ForStmt &FS, std::string &indexV);
 
 }; // end class OmpDartASTConsumer
 

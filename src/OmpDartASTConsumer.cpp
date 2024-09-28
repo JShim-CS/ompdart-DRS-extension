@@ -14,6 +14,8 @@
 #include <string>
 #include <stack>
 #include <unordered_map>
+#include <algorithm>
+#include <cctype>  
 
 using namespace clang;
 
@@ -118,13 +120,15 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
     bool stillSearching = true;
+    std::string indexV = "";
     for(AccessInfo a : ai){
       if(alreadyVisitedMap.find(a.S) != alreadyVisitedMap.end())continue;
       //foundForLoop
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
         ForStmt* fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
-        std::string str = this->getConditionOfLoop(*fs);
+        std::string str = this->getConditionOfLoop(*fs,indexV);
+        indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         predicate_string.push_back(str);
         continue;
       }
@@ -195,15 +199,29 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
           continue;
         }
 
-        if(a.Flags == A_WRONLY){
+        if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
           SourceLocation bloc = a.S->getBeginLoc();
           SourceLocation eloc = a.S->getEndLoc();
           CharSourceRange arrRange = CharSourceRange::getTokenRange(bloc,eloc);
           StringRef sr =  Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+          std::string exp = sr.str();
+          exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
+          
+          if(exp == indexV)continue;
           if(!predicateStack.empty()){
-            llvm::outs() <<  "(" << sr.str() <<" requires: ";
-            llvm::outs() << predicateStack.top() << " ) \n";
+            llvm::outs() <<  "(" << exp <<" requires: ";
+            llvm::outs() << predicateStack.top() << " ) ";
+            if(a.ArraySubscript){
+              const Expr *base = a.ArraySubscript->getBase();
+              bloc = base->getBeginLoc();
+              eloc = base->getEndLoc();
+              arrRange = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+              sr = Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+              llvm::outs() << "array name is: " << sr.str() <<" ";
+              //It is easier to get the array index from the source text
+            }
+            llvm::outs() << "\n";
             predicateStack.pop();
             //requiredCondition = "";
           }
@@ -214,6 +232,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 
     if(!stillSearching){
       llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
+      llvm::outs() << "indexVAR: " << indexV << "\n";
     }
     
   }
@@ -254,7 +273,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   OutFile.close();
 }
 
-std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
+std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &indexV){
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();
@@ -265,12 +284,7 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
     CharSourceRange initConditionRange = CharSourceRange::getTokenRange(initStartLocation,initEndLocation);
     StringRef initstr = Lexer::getSourceText(initConditionRange,*SM,(*CI).getLangOpts(),&invalid);
 
-    // Don't need it for now
-    // SourceLocation incStartLocation = inc->getBeginLoc();
-    // SourceLocation incEndLocation = inc->getEndLoc();
-    // CharSourceRange incConditionRange = CharSourceRange::getTokenRange(incStartLocation,incEndLocation);
-    // StringRef incstr = Lexer::getSourceText(incConditionRange,*SM,(*CI).getLangOpts(),&invalid);
-
+   
 
     SourceLocation condStartLocation = cond->getBeginLoc();
     SourceLocation condEndLocation = cond->getEndLoc();
@@ -298,9 +312,8 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
       }
 
     }
-    //FS.getConditionVariable();
-    //llvm::outs() <<"EXECUTED: " << FS.getConditionVariable()->getName().str() <<"\n";
-    std::string indexVar; //FS.getConditionVariable()->getName().str();
+    
+    std::string indexVar; 
     std::string bound2 = condstr.str();
     char code = 0;
     bool increment = false;
@@ -362,9 +375,10 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS){
       }
     }else{ //does not involve an inequality
       bound2 = bound2.substr(0,bound2.find(';'));
+      indexV = indexVar + "";
       return bound2;
     }
-
+    indexV = indexVar + "";
     llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
     std::string tempIndexVar;
     for(char c : indexVar){

@@ -2,8 +2,7 @@
 2. Encode the variables into the smt variables
 3. Solve using smt
 
-4. Extend to support switch-case
-
+4. Extend to support switch control statement
 5. Find a way to initialize the variables
 
 
