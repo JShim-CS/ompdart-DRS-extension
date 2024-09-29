@@ -293,7 +293,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
   std::stack<std::string> predicateStack;
-  //std::unordered_map<const std::string, bool> additionalVarMap;
+  std::unordered_map<std::string, bool> additionalVarMap;
 
 
   if(TargetFunction){
@@ -395,7 +395,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           if(exp == indexV || exp.find('=') == std::string::npos){
             continue;
           }else if(exp.find('[') == std::string::npos){
-
+            additionalVarMap[exp] = true;
           }
           if(!predicateStack.empty()){
             llvm::outs() <<  "(" << exp <<" requires: ";
@@ -425,6 +425,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     
   }
 
+  llvm::outs() << "ADDITIONAL VARS:\n";
+  for (const auto &pair : additionalVarMap) {
+    llvm::outs() << pair.first <<"\n";
+  }
 }
 
 std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV){
