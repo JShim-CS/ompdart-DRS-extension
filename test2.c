@@ -11,7 +11,7 @@ void func(){
     for(int i = 0; i < 1000; i++){
         if(i < 20 ){
              if(i%2 == 0 && j){
-                a[i+10] = 10;
+                a[i+10] = a[i] = 10;
                 v += 10;
              }else if(i%2 == 1){
                  a[i] = 15;
@@ -24,6 +24,7 @@ void func(){
             a[i] = 40;
         }
     }
+    
     
     #pragma omp target map(to:a)
     for(int j = 0; j < 1000; j++){

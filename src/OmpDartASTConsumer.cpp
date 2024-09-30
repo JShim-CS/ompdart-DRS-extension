@@ -429,7 +429,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   }
 }
 
-std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV,std::vector<std::string> &indexEncodings){
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV, std::vector<std::string> &indexEncodings){
   return this->recursivelySetTheString(exp,v,indexV,indexEncodings);
 }
 
@@ -454,8 +454,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
   }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
     const clang::Expr *childExpr = ice->getSubExpr();
     return this->recursivelySetTheString(childExpr,v,indexV,indexEncodings);
-  }
-  else{
+  }else{
     SourceRange expRange = exp->getSourceRange();
     StringRef expText = Lexer::getSourceText(CharSourceRange::getTokenRange(expRange), 
                                               (*SM), (*CI).getLangOpts());
@@ -463,4 +462,26 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
     return expText.str();
   }
 
+}
+
+std::string OmpDartASTConsumer::getArrayIndexEncoding(const Expr *exp, int v, std::string indexV, std::vector<std::string> &indexEncodings){
+   if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
+    std::string op = binOp->getOpcodeStr().str();
+    
+    //check for write (left side) first
+    if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getLHS())){
+      std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV,indexEncodings);
+      this->writeMap["("+write+")"] = true;
+    }else{
+
+    }
+
+    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV,indexEncodings);
+    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV,indexEncodings);
+    return left + " " + op + " " + right;
+  }
+}
+
+void OmpDartASTConsumer::setReadOrWrite(const std::string arrayNotation){
+  bool read = arrayNotation.find(']');
 }
