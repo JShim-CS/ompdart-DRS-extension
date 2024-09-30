@@ -55,8 +55,11 @@ bool OmpDartASTVisitor::VisitFunctionDecl(FunctionDecl *FD) {
 }
 
 bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
+  
   if (!VD->getLocation().isValid() || !SM->isInMainFile(VD->getLocation()))
     return true;
+    
+  this->allVars[VD->getNameAsString()];
   if (inLastTargetRegion(VD->getLocation())) {
     LastKernel->recordPrivate(VD);
     return true;
@@ -68,6 +71,7 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
     LastFunction->recordAccess(VD, VD->getLocation(), LastStmt, Flags, true);
     return true;
   }
+  
 
   return true;
 }
@@ -128,7 +132,7 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
 
   const DeclRefExpr *DRE = getLeftmostDecl(BO);
   const ValueDecl *VD = DRE->getDecl();
-
+  this->allVars[VD->getNameAsString()] = true;
   uint8_t AccessType;
   // Check to see if this value is read from the right hand side.
   if (BO->isCompoundAssignmentOp() || usedInStmt(BO->getRHS(), VD)) {

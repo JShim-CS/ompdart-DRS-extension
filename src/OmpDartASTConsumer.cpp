@@ -293,7 +293,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
   std::stack<std::string> predicateStack;
-  std::unordered_map<std::string, bool> additionalVarMap;
+  //std::unordered_map<std::string, bool> additionalVarMap;
+  std::vector<std::string> indexEncodings;
 
 
   if(TargetFunction){
@@ -327,7 +328,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
           //StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
           //                                  (*SM), (*CI).getLangOpts());
-          std::string condition = this->setStringForRegion(cond,v,indexV);
+          std::string condition = this->setStringForRegion(cond,v,indexV,indexEncodings);
           
           std::string requiredCondition = "";
           if(a.Barrier == CondFallback){
@@ -358,7 +359,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                   //condRange = condTemp->getSourceRange();
                   //condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
                   //                          (*SM), (*CI).getLangOpts());
-                  condition = this->setStringForRegion(condTemp,v,indexV);
+                  condition = this->setStringForRegion(condTemp,v,indexV,indexEncodings);
                   if(elseIfStmt && a.S == elseIfStmt){
                     requiredCondition += (" AND !(" + condition +")");
                   }else{
@@ -392,11 +393,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           std::string exp = sr.str();
           exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
           
-          if(exp == indexV || exp.find('=') == std::string::npos){
-            continue;
-          }else if(exp.find('[') == std::string::npos){
-            additionalVarMap[exp] = true;
-          }
+          if(exp == indexV)continue;
+          
           if(!predicateStack.empty()){
             llvm::outs() <<  "(" << exp <<" requires: ";
             llvm::outs() << predicateStack.top() << " ) ";
@@ -426,20 +424,20 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   }
 
   llvm::outs() << "ADDITIONAL VARS:\n";
-  for (const auto &pair : additionalVarMap) {
+  for (const auto &pair : Visitor->allVars) {
     llvm::outs() << pair.first <<"\n";
   }
 }
 
-std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV){
-  return this->recursivelySetTheString(exp,v,indexV);
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV,std::vector<std::string> &indexEncodings){
+  return this->recursivelySetTheString(exp,v,indexV,indexEncodings);
 }
 
-std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, const std::string &indexV){
+std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, const std::string &indexV, std::vector<std::string> &indexEncodings){
   if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
-    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
-    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV);
+    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV,indexEncodings);
+    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV,indexEncodings);
     return left + " " + op + " " + right;
   }else if(const DeclRefExpr *declRef = dyn_cast<DeclRefExpr>(exp)){
     //llvm::outs() << "inside" <<"\n";
@@ -448,13 +446,14 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
     std::string val = decl->getNameAsString();
     val.erase(std::remove_if(val.begin(), val.end(), ::isspace), val.end());
     if(val == indexV){
+      indexEncodings.push_back(val + "_drdVar_" + std::to_string(v));
       return val + "_drdVar_" + std::to_string(v);
     }else{
       return val;
     }
   }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
     const clang::Expr *childExpr = ice->getSubExpr();
-    return this->recursivelySetTheString(childExpr,v,indexV);
+    return this->recursivelySetTheString(childExpr,v,indexV,indexEncodings);
   }
   else{
     SourceRange expRange = exp->getSourceRange();

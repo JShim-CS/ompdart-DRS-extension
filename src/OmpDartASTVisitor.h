@@ -7,6 +7,7 @@
 #include "DataTracker.h"
 #include "DrdpragmaHandler.h"
 #include "ControlRegions.h"
+#include <unordered_map>
 
 using namespace clang;
 
@@ -24,7 +25,6 @@ private:
   // function
   std::vector<DataTracker *> FunctionTrackers;
   std::vector<Kernel *> Kernels;
-
   DataTracker *LastFunction;
   Kernel *LastKernel;
   Stmt *LastStmt;
@@ -32,9 +32,10 @@ private:
   bool inLastTargetRegion(SourceLocation Loc);
   bool inLastFunction(SourceLocation Loc);
 
+
 public:
   
-
+  std::unordered_map<std::string,bool> allVars;
   explicit OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber);
 
   std::vector<DataTracker *> &getFunctionTrackers();
