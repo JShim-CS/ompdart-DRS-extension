@@ -9,7 +9,7 @@
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/Pragma.h"
-
+#include <string>
 
 using namespace clang;
 
@@ -19,7 +19,7 @@ public:
     bool found;
     unsigned *lineNumber;
     DrdpragmaHandler() : PragmaHandler("drd"), found(false) {}
-
+    //std::string arrayName = "";
     //written by Junhyung Shim
     //sets the line-number of a #pragma 
     void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer, Token &Token) override;

@@ -293,7 +293,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
   std::stack<std::string> predicateStack;
-  //std::unordered_map<std::string, bool> additionalVarMap;
+  
+
   std::vector<std::string> indexEncodings;
 
 
@@ -328,7 +329,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
           //StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
           //                                  (*SM), (*CI).getLangOpts());
-          std::string condition = this->setStringForRegion(cond,v,indexV,indexEncodings);
+          std::string condition = this->setStringForRegion(cond,v,indexV);
+
           
           std::string requiredCondition = "";
           if(a.Barrier == CondFallback){
@@ -359,7 +361,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                   //condRange = condTemp->getSourceRange();
                   //condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
                   //                          (*SM), (*CI).getLangOpts());
-                  condition = this->setStringForRegion(condTemp,v,indexV,indexEncodings);
+                  condition = this->setStringForRegion(condTemp,v,indexV);
                   if(elseIfStmt && a.S == elseIfStmt){
                     requiredCondition += (" AND !(" + condition +")");
                   }else{
@@ -394,6 +396,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
           
           if(exp == indexV)continue;
+          this->setArrayIndexEncoding(a.S,v,indexV);
           
           if(!predicateStack.empty()){
             llvm::outs() <<  "(" << exp <<" requires: ";
@@ -427,17 +430,26 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   for (const auto &pair : Visitor->allVars) {
     llvm::outs() << pair.first <<"\n";
   }
+  llvm::outs()<< "WRITES:\n";
+  for (const auto &pair : this->writeMap) {
+    llvm::outs() << pair.first <<"\n";
+  }
+
+  llvm::outs()<< "READS:\n";
+  for (const auto &pair : this->readMap) {
+    llvm::outs() << pair.first <<"\n";
+  }
 }
 
-std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,const std::string &indexV, std::vector<std::string> &indexEncodings){
-  return this->recursivelySetTheString(exp,v,indexV,indexEncodings);
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int v,  const std::string &indexV){
+  return this->recursivelySetTheString(exp,v, indexV);
 }
 
-std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, const std::string &indexV, std::vector<std::string> &indexEncodings){
+std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, const std::string &indexV){
   if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
-    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV,indexEncodings);
-    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV,indexEncodings);
+    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
+    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV);
     return left + " " + op + " " + right;
   }else if(const DeclRefExpr *declRef = dyn_cast<DeclRefExpr>(exp)){
     //llvm::outs() << "inside" <<"\n";
@@ -446,14 +458,13 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
     std::string val = decl->getNameAsString();
     val.erase(std::remove_if(val.begin(), val.end(), ::isspace), val.end());
     if(val == indexV){
-      indexEncodings.push_back(val + "_drdVar_" + std::to_string(v));
       return val + "_drdVar_" + std::to_string(v);
     }else{
       return val;
     }
   }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
     const clang::Expr *childExpr = ice->getSubExpr();
-    return this->recursivelySetTheString(childExpr,v,indexV,indexEncodings);
+    return this->recursivelySetTheString(childExpr,v,indexV);
   }else{
     SourceRange expRange = exp->getSourceRange();
     StringRef expText = Lexer::getSourceText(CharSourceRange::getTokenRange(expRange), 
@@ -464,22 +475,48 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
 
 }
 
-std::string OmpDartASTConsumer::getArrayIndexEncoding(const Expr *exp, int v, std::string indexV, std::vector<std::string> &indexEncodings){
+std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v,  const std::string &indexV){
+  
+  if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
+    return this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+  }else if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
+    std::string left = this->recursivelyFindArrayIndex(binOp->getLHS(),v,indexV);
+    std::string right = this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
+   
+    if(left == "" && right == ""){
+      return "";
+    }else if(left != "" && right != ""){
+     return "( (" + left + ") AND (" + right +") )"; 
+    }else if(left != ""){
+      return left;
+    }else if(right != ""){
+      return right;
+    }
+  }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
+    const clang::Expr *childExpr = ice->getSubExpr();
+    return this->recursivelyFindArrayIndex(childExpr,v,indexV);
+  }else{
+    return "";
+  }
+}
+
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     
     //check for write (left side) first
     if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getLHS())){
-      std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV,indexEncodings);
+      std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
       this->writeMap["("+write+")"] = true;
-    }else{
-
     }
 
-    std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV,indexEncodings);
-    std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV,indexEncodings);
-    return left + " " + op + " " + right;
+    std::string read =  this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
+    if(read != ""){
+      this->readMap[read] = true;
+    }
+    
   }
+
 }
 
 void OmpDartASTConsumer::setReadOrWrite(const std::string arrayNotation){
