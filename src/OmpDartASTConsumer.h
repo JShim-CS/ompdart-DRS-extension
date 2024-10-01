@@ -40,7 +40,7 @@ private:
   std::string recursivelySetTheString(const Expr *exp, int v, const std::string &indexV);
   void setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV);
   std::string recursivelyFindArrayIndex(const Expr *exp, int v, const std::string &indexV);
-  void setReadOrWrite(const std::string arrayNotation);
+  
 }; // end class OmpDartASTConsumer
 
 #endif

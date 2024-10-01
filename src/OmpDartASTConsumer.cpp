@@ -354,13 +354,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               const Stmt *stmt = Parent.get<Stmt>();
               
               if(stmt){
-                //llvm::outs() << "stmt is of type: " << stmt->getStmtClassName() << "\n";
+               
                 if(isa<IfStmt>(*stmt)){
                   elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
                   const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
-                  //condRange = condTemp->getSourceRange();
-                  //condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
-                  //                          (*SM), (*CI).getLangOpts());
                   condition = this->setStringForRegion(condTemp,v,indexV);
                   if(elseIfStmt && a.S == elseIfStmt){
                     requiredCondition += (" AND !(" + condition +")");
@@ -396,6 +393,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
           
           if(exp == indexV)continue;
+
           this->setArrayIndexEncoding(a.S,v,indexV);
           
           if(!predicateStack.empty()){
@@ -478,7 +476,13 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
 std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v,  const std::string &indexV){
   
   if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
-    return this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+    const Expr *base = arrayExpr->getBase();
+    SourceLocation bloc = base->getBeginLoc();
+    SourceLocation eloc = base->getEndLoc();
+    CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+    bool invalid; //is this even needed??
+    StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
+    return sr.str() +";("+this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV) +")";
   }else if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string left = this->recursivelyFindArrayIndex(binOp->getLHS(),v,indexV);
     std::string right = this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
@@ -506,8 +510,15 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std
     
     //check for write (left side) first
     if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getLHS())){
+      int indexPos = 0;
+      const Expr *base = arrayExpr->getBase();
+      SourceLocation bloc = base->getBeginLoc();
+      SourceLocation eloc = base->getEndLoc();
+      CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+      bool invalid; //is this even needed??
+      StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
-      this->writeMap["("+write+")"] = true;
+      this->writeMap[sr.str()+";("+write+")"] = true;
     }
 
     std::string read =  this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
@@ -519,6 +530,3 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std
 
 }
 
-void OmpDartASTConsumer::setReadOrWrite(const std::string arrayNotation){
-  bool read = arrayNotation.find(']');
-}
