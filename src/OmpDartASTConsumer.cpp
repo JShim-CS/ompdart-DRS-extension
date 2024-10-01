@@ -292,7 +292,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   //dive into targetFunction to map out the predicates of conditionals
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
-  std::stack<std::string> predicateStack;
+  //std::stack<std::string> predicateStack;
   
 
   std::vector<std::string> indexEncodings;
@@ -319,69 +319,63 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       
       if(!stillSearching){
 
-
-        if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
+        // //has no notion of whether the read or write occurs
+        // if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           
-          const Expr *cond = (dyn_cast<IfStmt>(a.S))->getCond();
-          const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
+        //   const Expr *cond = NULL; //(dyn_cast<IfStmt>(a.S))->getCond();
+        //   const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
           
-          //SourceRange condRange = cond->getSourceRange();
-
-          //StringRef condText = Lexer::getSourceText(CharSourceRange::getTokenRange(condRange), 
-          //                                  (*SM), (*CI).getLangOpts());
-          std::string condition = this->setStringForRegion(cond,v,indexV);
+        //   std::string condition = ""; //this->setStringForRegion(cond,v,indexV);
 
           
-          std::string requiredCondition = "";
-          if(a.Barrier == CondFallback){
-            requiredCondition += "!(" + condition + ")";
-          }else{
-            requiredCondition += "(" + condition + ")";
-          }
+        //   std::string requiredCondition = "";
+        //   // if(a.Barrier == CondFallback){
+        //   //   requiredCondition += "!(" + condition + ")";
+        //   // }else{
+        //   //   requiredCondition += "(" + condition + ")";
+        //   // }
            
           
           
-          std::stack<const DynTypedNodeList*> nodeStack;
-          nodeStack.push(&Parents);
-          //llvm::outs()<<"my node is: " << a.S->getStmtClassName()<<", " << condText.str() <<"\n";
-          const Stmt *elseIfStmt = NULL;//(dyn_cast<IfStmt>(a.S))->getElse();
-          //^^^ get parent's else statement
+        //   std::stack<const DynTypedNodeList*> nodeStack;
+        //   nodeStack.push(&Parents);
+        //   const Stmt *elseIfStmt = NULL;
 
-          while(!nodeStack.empty()){
-            const auto *tempParents = nodeStack.top();
-            nodeStack.pop();
-            for (const auto Parent : *tempParents){
-              const Stmt *stmt = Parent.get<Stmt>();
+        //   while(!nodeStack.empty()){
+        //     const auto *tempParents = nodeStack.top();
+        //     nodeStack.pop();
+        //     for (const auto Parent : *tempParents){
+        //       const Stmt *stmt = Parent.get<Stmt>();
               
-              if(stmt){
+        //       if(stmt){
                
-                if(isa<IfStmt>(*stmt)){
-                  elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
-                  const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
-                  condition = this->setStringForRegion(condTemp,v,indexV);
-                  if(elseIfStmt && a.S == elseIfStmt){
-                    requiredCondition += (" AND !(" + condition +")");
-                  }else{
-                    requiredCondition += (" AND " + condition);
-                  }
+        //         if(isa<IfStmt>(*stmt)){
+        //           elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+        //           const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
+        //           condition = this->setStringForRegion(condTemp,v,indexV);
+        //           if(elseIfStmt){
+        //             requiredCondition += (" AND !(" + condition +")");
+        //           }else{
+        //             requiredCondition += (" AND " + condition);
+        //           }
                   
-                  //llvm::outs()<<condText.str()<<"\n";
-                }
-                const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
-                nodeStack.push(&ThingToPush);
+        //           //llvm::outs()<<condText.str()<<"\n";
+        //         }
+        //         const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
+        //         nodeStack.push(&ThingToPush);
                 
-              }
-            }
+        //       }
+        //     }
               
-          }
-          //requiredCondition += ")\n";
-          predicateStack.push(requiredCondition);
-          //llvm::outs()<< condText.str() <<"\n\n";
+        //   }
+        //   //requiredCondition += ")\n";
+        //   predicateStack.push(requiredCondition);
+        //   //llvm::outs()<< condText.str() <<"\n\n";
             
           
         
-          continue;
-        }
+        //   continue;
+        // }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
@@ -394,12 +388,55 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           
           if(exp == indexV)continue;
 
+
+          const Expr *cond = NULL; //(dyn_cast<IfStmt>(a.S))->getCond();
+          const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
+          std::string condition = ""; 
+          std::string requiredCondition = "";
+          std::stack<const DynTypedNodeList*> nodeStack;
+          nodeStack.push(&Parents);
+          const Stmt *elseIfStmt = NULL;
+          const Stmt *firstPaernt = NULL;
+          int loopCounter = 0;
+          while(!nodeStack.empty()){
+            const auto *tempParents = nodeStack.top();
+            nodeStack.pop();
+            for (const auto Parent : *tempParents){
+              const Stmt *stmt = Parent.get<Stmt>();
+              
+              if(stmt){
+                
+                if(isa<IfStmt>(*stmt)){
+                  if(!loopCounter){
+                    firstPaernt = stmt;
+                  }
+                  elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                  const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
+                  condition = this->setStringForRegion(condTemp,v,indexV);
+
+                  if(elseIfStmt){
+                    requiredCondition += (" AND !(" + condition +")");
+                  }else{
+                    requiredCondition += (" AND " + condition);
+                  }
+                  
+                  //llvm::outs()<<condText.str()<<"\n";
+                }
+                const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
+                nodeStack.push(&ThingToPush);
+                
+              }
+            }
+            loopCounter++;
+             
+          }
+
           
           
-          if(!predicateStack.empty()){
+          if(requiredCondition != ""){
             llvm::outs() <<  "(" << exp <<" requires: ";
-            this->setArrayIndexEncoding(a.S,v,indexV,predicateStack.top());
-            llvm::outs() << predicateStack.top() << " ) ";
+            this->setArrayIndexEncoding(a.S,v,indexV,requiredCondition);
+            llvm::outs() << requiredCondition << " ) ";
             if(a.ArraySubscript){
               const Expr *base = a.ArraySubscript->getBase();
               bloc = base->getBeginLoc();
@@ -410,7 +447,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               //It is easier to get the array index from the source text
             }
             llvm::outs() << "\n";
-            predicateStack.pop();
+           
             //requiredCondition = "";
           }
         }
