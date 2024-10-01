@@ -394,10 +394,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           std::string condition = ""; 
           std::string requiredCondition = "";
           std::stack<const DynTypedNodeList*> nodeStack;
+          std::stack<std::string> predicateStack;
           nodeStack.push(&Parents);
           const Stmt *elseIfStmt = NULL;
           const Stmt *firstPaernt = NULL;
           int loopCounter = 0;
+          bool fallBack = false;
           while(!nodeStack.empty()){
             const auto *tempParents = nodeStack.top();
             nodeStack.pop();
@@ -410,15 +412,45 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                   if(!loopCounter){
                     firstPaernt = stmt;
                   }
-                  elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
+                  if(const IfStmt* ift = dyn_cast<IfStmt>(stmt)){
+                    elseIfStmt = ift->getElse();
+                  }else if(!loopCounter){
+
+                  }
+                  
                   const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
                   condition = this->setStringForRegion(condTemp,v,indexV);
-
-                  if(elseIfStmt){
-                    requiredCondition += (" AND !(" + condition +")");
+                  
+                  if(!loopCounter){
+                    predicateStack.push("("+condition+")");
                   }else{
-                    requiredCondition += (" AND " + condition);
+                    elseIfStmt = (dyn_cast<IfStmt>(firstPaernt))->getElse();
+                    const Expr* elseIfExpr = NULL;
+                    if(const IfStmt* ift = dyn_cast<IfStmt>(elseIfStmt)){
+                      elseIfExpr = (ift)->getCond();
+                    }
+                   
+                    if(elseIfExpr){
+
+                    }
+                    
+
+                    if(predicateStack.size() > 0){
+                      std::string temp = "("+predicateStack.top()+")";
+                      predicateStack.pop();
+                      if(condition == temp){
+                        
+                      }
+                    }
+
+                    if(condition == ){
+                      requiredCondition += (" AND !(" + condition +")");
+                    }else{
+                      requiredCondition += (" AND " + condition);
+                    }
+
                   }
+                  
                   
                   //llvm::outs()<<condText.str()<<"\n";
                 }
