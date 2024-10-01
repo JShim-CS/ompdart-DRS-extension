@@ -394,10 +394,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           
           if(exp == indexV)continue;
 
-          this->setArrayIndexEncoding(a.S,v,indexV);
+          
           
           if(!predicateStack.empty()){
             llvm::outs() <<  "(" << exp <<" requires: ";
+            this->setArrayIndexEncoding(a.S,v,indexV,predicateStack.top());
             llvm::outs() << predicateStack.top() << " ) ";
             if(a.ArraySubscript){
               const Expr *base = a.ArraySubscript->getBase();
@@ -504,7 +505,7 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v
   }
 }
 
-void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV){
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV, const std::string controlCondition){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     
@@ -518,12 +519,12 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std
       bool invalid; //is this even needed??
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
-      this->writeMap[sr.str()+";("+write+")"] = true;
+      this->writeMap[sr.str()+";("+write+"):"+controlCondition] = true;
     }
 
     std::string read =  this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
     if(read != ""){
-      this->readMap[read] = true;
+      this->readMap[read+":"+controlCondition] = true;
     }
     
   }
