@@ -304,15 +304,14 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     std::string indexV = "";
     int v = -1;
     std::stack<std::vector<std::string>> chainOfPredicates;
-    bool newRegion = false;
+    const Stmt* mostRecentControlRegion;
+    ForStmt* fs = NULL;
     for(AccessInfo a : ai){
-      //llvm::outs()<<"YO\n";
       v++;
-      //if(alreadyVisitedMap.find(a.S) != alreadyVisitedMap.end())continue;
       //foundForLoop
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
-        ForStmt* fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
+        fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string str = this->getConditionOfLoop(*fs,indexV);
         indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         predicate_string.push_back(str);
@@ -320,16 +319,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       }
       
       if(!stillSearching){
-
-        // //has no notion of whether the read or write occurs
         if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
-          if(a.Barrier == CondBegin){
-            std::vector<std::string> temp;
-            const Expr *condTemp = (dyn_cast<IfStmt>(a.S))->getCond();
-            temp.push_back(this->setStringForRegion(condTemp,v,indexV));
-            chainOfPredicates.push(temp);
-            
-          }
+          mostRecentControlRegion = a.S;
           continue;
         }
 
@@ -355,69 +346,42 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           const Stmt *elseIfStmt = NULL;
           const Stmt *firstPaernt = NULL;
           int loopCounter = 0;
-          bool fallBack = false;
+          bool breakWhile = false;
           
           while(!nodeStack.empty()){
             const auto *tempParents = nodeStack.top();
             nodeStack.pop();
+            const IfStmt* lastSeen = NULL;
+            //llvm::outs()<<"while\n";
             for (const auto Parent : *tempParents){
-              const Stmt *stmt = Parent.get<Stmt>();
+              //llvm::outs()<<"for\n";
               
+              
+              const Stmt *stmt = Parent.get<Stmt>();
+              if(stmt == fs->getBody()){
+                breakWhile = true;
+                break;
+              }
+
               if(stmt){
-                
-                if(isa<IfStmt>(*stmt)){
-                  if(!loopCounter){
-                    firstPaernt = stmt;
+                //if-regions only show parental hierarchy if 1. nested or 2. if-elseif-else
+                if(const IfStmt* ifs = dyn_cast<IfStmt>(stmt)){
+                  if(ifs == mostRecentControlRegion && !loopCounter){//this includes when in if()a=20; format
+                    requiredCondition += this->recursivelySetTheString(ifs->getCond(),v,indexV);
+                    loopCounter++;
+                  }else if(lastSeen->getElse() == mostRecentControlRegion){ 
+                    requiredCondition += " AND !(" + this->recursivelySetTheString(ifs->getCond(),v,indexV) + ")";
+                    loopCounter++;
                   }
-                  if(const IfStmt* ift = dyn_cast<IfStmt>(stmt)){
-                    elseIfStmt = ift->getElse();
-                  }else if(!loopCounter){
-
-                  }
-                  
-                  const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
-                  condition = this->setStringForRegion(condTemp,v,indexV);
-                  
-                  if(!loopCounter){
-                    predicateStack.push("("+condition+")");
-                  }else{
-                    elseIfStmt = (dyn_cast<IfStmt>(firstPaernt))->getElse();
-                    const Expr* elseIfExpr = NULL;
-                    if(const IfStmt* ift = dyn_cast<IfStmt>(elseIfStmt)){
-                      elseIfExpr = (ift)->getCond();
-                    }
-                   
-                    if(elseIfExpr){
-
-                    }
-                    
-
-                    if(predicateStack.size() > 0){
-                      std::string temp = "("+predicateStack.top()+")";
-                      predicateStack.pop();
-                      if(condition == temp){
-                        
-                      }
-                    }
-
-                    if(condition == ){
-                      requiredCondition += (" AND !(" + condition +")");
-                    }else{
-                      requiredCondition += (" AND " + condition);
-                    }
-
-                  }
-                  
-                  
-                  //llvm::outs()<<condText.str()<<"\n";
+                  mostRecentControlRegion = (const Stmt*) ifs;
                 }
+
                 const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
                 nodeStack.push(&ThingToPush);
-                
               }
             }
-            loopCounter++;
-             
+            if(breakWhile)break;
+            
           }
 
           
