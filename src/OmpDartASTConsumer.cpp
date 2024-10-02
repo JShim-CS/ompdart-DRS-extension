@@ -465,7 +465,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
 }
 
 std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v,  const std::string &indexV){
-  
+  //what is exp is another binOp??
   if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
     const Expr *base = arrayExpr->getBase();
     SourceLocation bloc = base->getBeginLoc();
@@ -481,7 +481,12 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v
     if(left == "" && right == ""){
       return "";
     }else if(left != "" && right != ""){
-     return "( (" + left + ") AND (" + right +") )"; 
+      std::string op = binOp->getOpcodeStr().str();
+      if(op == "="){
+        return left;
+      }else{
+        return left + " " + op + " " + right;  
+      }
     }else if(left != ""){
       return left;
     }else if(right != ""){
