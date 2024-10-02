@@ -303,6 +303,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     bool stillSearching = true;
     std::string indexV = "";
     int v = -1;
+    std::stack<std::vector<std::string>> chainOfPredicates;
+    bool newRegion = false;
     for(AccessInfo a : ai){
       //llvm::outs()<<"YO\n";
       v++;
@@ -320,62 +322,16 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       if(!stillSearching){
 
         // //has no notion of whether the read or write occurs
-        // if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
-          
-        //   const Expr *cond = NULL; //(dyn_cast<IfStmt>(a.S))->getCond();
-        //   const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
-          
-        //   std::string condition = ""; //this->setStringForRegion(cond,v,indexV);
-
-          
-        //   std::string requiredCondition = "";
-        //   // if(a.Barrier == CondFallback){
-        //   //   requiredCondition += "!(" + condition + ")";
-        //   // }else{
-        //   //   requiredCondition += "(" + condition + ")";
-        //   // }
-           
-          
-          
-        //   std::stack<const DynTypedNodeList*> nodeStack;
-        //   nodeStack.push(&Parents);
-        //   const Stmt *elseIfStmt = NULL;
-
-        //   while(!nodeStack.empty()){
-        //     const auto *tempParents = nodeStack.top();
-        //     nodeStack.pop();
-        //     for (const auto Parent : *tempParents){
-        //       const Stmt *stmt = Parent.get<Stmt>();
-              
-        //       if(stmt){
-               
-        //         if(isa<IfStmt>(*stmt)){
-        //           elseIfStmt = (dyn_cast<IfStmt>(stmt))->getElse();
-        //           const Expr *condTemp = (dyn_cast<IfStmt>(stmt))->getCond();
-        //           condition = this->setStringForRegion(condTemp,v,indexV);
-        //           if(elseIfStmt){
-        //             requiredCondition += (" AND !(" + condition +")");
-        //           }else{
-        //             requiredCondition += (" AND " + condition);
-        //           }
-                  
-        //           //llvm::outs()<<condText.str()<<"\n";
-        //         }
-        //         const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
-        //         nodeStack.push(&ThingToPush);
-                
-        //       }
-        //     }
-              
-        //   }
-        //   //requiredCondition += ")\n";
-        //   predicateStack.push(requiredCondition);
-        //   //llvm::outs()<< condText.str() <<"\n\n";
+        if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
+          if(a.Barrier == CondBegin){
+            std::vector<std::string> temp;
+            const Expr *condTemp = (dyn_cast<IfStmt>(a.S))->getCond();
+            temp.push_back(this->setStringForRegion(condTemp,v,indexV));
+            chainOfPredicates.push(temp);
             
-          
-        
-        //   continue;
-        // }
+          }
+          continue;
+        }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
@@ -400,6 +356,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           const Stmt *firstPaernt = NULL;
           int loopCounter = 0;
           bool fallBack = false;
+          
           while(!nodeStack.empty()){
             const auto *tempParents = nodeStack.top();
             nodeStack.pop();
