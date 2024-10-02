@@ -368,9 +368,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     requiredCondition += "(" +this->recursivelySetTheString(ifs->getCond(),v,indexV) +")";
                     loopCounter++;
                   }else if(ifs->getElse() == mostRecentControlRegion){ 
-                    requiredCondition += " AND !(" + this->recursivelySetTheString(ifs->getCond(),v,indexV) + ")";
+                    if(requiredCondition != ""){
+                      requiredCondition += " AND ";
+                    }
+                    requiredCondition += "!(" + this->recursivelySetTheString(ifs->getCond(),v,indexV) + ")";
                   }else{
-                    requiredCondition += " AND (" +this->recursivelySetTheString(ifs->getCond(),v,indexV) +")";
+                    if(requiredCondition != ""){
+                      requiredCondition += " AND ";
+                    }
+                    requiredCondition += "(" +this->recursivelySetTheString(ifs->getCond(),v,indexV) +")";
                   }
                 }
 
