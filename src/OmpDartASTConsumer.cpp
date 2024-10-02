@@ -305,6 +305,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     int v = -1;
     std::stack<std::vector<std::string>> chainOfPredicates;
     const Stmt* mostRecentControlRegion;
+    //const Stmt* closestControlRegion;
     ForStmt* fs = NULL;
     for(AccessInfo a : ai){
       v++;
@@ -321,6 +322,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       if(!stillSearching){
         if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           mostRecentControlRegion = a.S;
+          //closestControlRegion = a.S;
           continue;
         }
 
@@ -351,12 +353,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           while(!nodeStack.empty()){
             const auto *tempParents = nodeStack.top();
             nodeStack.pop();
-            const IfStmt* lastSeen = NULL;
-            //llvm::outs()<<"while\n";
+            
             for (const auto Parent : *tempParents){
-              //llvm::outs()<<"for\n";
-              
-              
               const Stmt *stmt = Parent.get<Stmt>();
               if(stmt == fs->getBody()){
                 breakWhile = true;
@@ -367,18 +365,20 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                 //if-regions only show parental hierarchy if 1. nested or 2. if-elseif-else
                 if(const IfStmt* ifs = dyn_cast<IfStmt>(stmt)){
                   if(ifs == mostRecentControlRegion && !loopCounter){//this includes when in if()a=20; format
-                    requiredCondition += this->recursivelySetTheString(ifs->getCond(),v,indexV);
+                    requiredCondition += "(" +this->recursivelySetTheString(ifs->getCond(),v,indexV) +")";
                     loopCounter++;
-                  }else if(lastSeen->getElse() == mostRecentControlRegion){ 
+                  }else if(ifs->getElse() == mostRecentControlRegion){ 
                     requiredCondition += " AND !(" + this->recursivelySetTheString(ifs->getCond(),v,indexV) + ")";
-                    loopCounter++;
+                  }else{
+                    requiredCondition += " AND (" +this->recursivelySetTheString(ifs->getCond(),v,indexV) +")";
                   }
-                  mostRecentControlRegion = (const Stmt*) ifs;
                 }
 
+                mostRecentControlRegion = stmt;
                 const auto &ThingToPush = (CI->getASTContext()).getParents(DynTypedNode::create(*stmt));
                 nodeStack.push(&ThingToPush);
               }
+              
             }
             if(breakWhile)break;
             
