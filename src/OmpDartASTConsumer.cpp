@@ -318,13 +318,24 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         predicate_string.push_back(str);
         continue;
       }
+      if(a.Barrier == LoopEnd)break;
+      
       
       if(!stillSearching){
+
         if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           mostRecentControlRegion = a.S;
           //closestControlRegion = a.S;
           continue;
         }
+
+        if(const clang::BinaryOperator *binOp = llvm::dyn_cast<clang::BinaryOperator>(a.S)){
+          std::string op = binOp->getOpcodeStr().str();
+          if(op == "+=" || op == "-=" || op == "*=" || op == "/="){
+            llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
+            exit(0);
+          }
+      }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
@@ -387,12 +398,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               
             }
             if(breakWhile)break;
-            
           }
 
           
           
-          if(requiredCondition != ""){
+          //if(requiredCondition != ""){
             llvm::outs() <<  "(" << exp <<" requires: ";
             this->setArrayIndexEncoding(a.S,v,indexV,requiredCondition);
             llvm::outs() << requiredCondition << " ) ";
@@ -408,7 +418,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             llvm::outs() << "\n";
            
             //requiredCondition = "";
-          }
+          //}
         }
 
       }
@@ -445,6 +455,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int v, 
     std::string op = binOp->getOpcodeStr().str();
     std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
     std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV);
+    
     return left + " " + op + " " + right;
   }else if(const DeclRefExpr *declRef = dyn_cast<DeclRefExpr>(exp)){
     //llvm::outs() << "inside" <<"\n";
@@ -479,15 +490,16 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v
     CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
     bool invalid; //is this even needed??
     StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
-    return sr.str() +";("+this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV) +")";
+    return sr.str() +"|("+this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV) +")|"+indexV+"_drdVar_"+std::to_string(v);
   }else if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string left = this->recursivelyFindArrayIndex(binOp->getLHS(),v,indexV);
     std::string right = this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
-   
+    std::string op = binOp->getOpcodeStr().str();
+    
     if(left == "" && right == ""){
       return "";
     }else if(left != "" && right != ""){
-      std::string op = binOp->getOpcodeStr().str();
+      //std::string op = binOp->getOpcodeStr().str();
       if(op == "="){
         return left;
       }else{
@@ -509,6 +521,13 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int v
 void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV, const std::string controlCondition){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
+
+    std::string realCondition = controlCondition;
+    if(controlCondition.find('=') != std::string::npos){ //control statement has assignment op as well
+      //for over-approximation we set all assignment in the control statement predicate as true
+      //if(a[i] = v){a[i+2]=0;} --> this could lead to datarace regardless of what the value of v is
+      realCondition = "True";
+    }
     
     //check for write (left side) first
     if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getLHS())){
@@ -520,12 +539,14 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int v, const std
       bool invalid; //is this even needed??
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
-      this->writeMap[sr.str()+";("+write+"):"+controlCondition] = true;
+      
+
+      this->writeMap[sr.str()+"|("+write+")|"+ indexV + "_drdVar_"+std::to_string(v)+"|"+realCondition] = true;
     }
 
     std::string read =  this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
     if(read != ""){
-      this->readMap[read+":"+controlCondition] = true;
+      this->readMap[read+"|"+realCondition] = true;
     }
     
   }

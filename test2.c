@@ -7,11 +7,17 @@ void func(){
     int v;
     int j = 20;
     int k = 10;
-    
-    #pragma drd Array=arr
+    v+=j;
+    #pragma drd
     for(int i = 0; i < 1000; i++){
-        a[i+2] = a[i];
+        if(a[i+2] = 0){
+            a[i] = a[i+3];
+        }
+       
     }
+    v+=k;
+    
+  
     
 
 }
