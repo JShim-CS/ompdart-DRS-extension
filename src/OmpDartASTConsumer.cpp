@@ -22,7 +22,6 @@
 
 
 
-
 using namespace clang;
 
 OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
@@ -452,13 +451,20 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   for (const auto &pair : this->readMap) {
     llvm::outs() << pair.first <<"\n";
   }
-  
+
+  std::ofstream outfile("drsolver.py");
   try{
-    std::ofstream outfile("../practice/drsolver.py");
+    if (!outfile) {
+        llvm::outs() << "Error: File could not be created!\n"; 
+    }
     outfile <<"from z3 import *\n";
+    outfile << "print(\"HI\")\n";
     outfile.close();
     
   }catch(...){
+    if(outfile){
+      outfile.close();
+    }
     llvm::outs() << "Error while solving for data race\n";
   }
   
