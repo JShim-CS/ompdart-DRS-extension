@@ -36,10 +36,10 @@ private:
   CompilerInstance *CI;
   std::string getConditionOfLoop(ForStmt &FS, std::string &indexV);
   void recordReadAndWrite();
-  std::string setStringForRegion(const Expr *exp, int v, const std::string &indexV);
-  std::string recursivelySetTheString(const Expr *exp, int v, const std::string &indexV);
-  void setArrayIndexEncoding(const Stmt *exp, int v, const std::string &indexV, const std::string controlCondition);
-  std::string recursivelyFindArrayIndex(const Expr *exp, int v, const std::string &indexV);
+  std::string setStringForRegion(const Expr *exp, int *v, const std::string &indexV);
+  std::string recursivelySetTheString(const Expr *exp, int *v, const std::string &indexV);
+  void setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition);
+  std::string recursivelyFindArrayIndex(const Expr *exp, int *v, const std::string &indexV);
   
 }; // end class OmpDartASTConsumer
 
