@@ -17,8 +17,10 @@
 #include <algorithm>
 #include <cctype>  
 
+#include<iostream>
+#include<fstream>
 
-#include <z3++.h>
+
 
 
 using namespace clang;
@@ -450,24 +452,20 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   for (const auto &pair : this->readMap) {
     llvm::outs() << pair.first <<"\n";
   }
-
+  
+  try{
+    std::ofstream outfile("../practice/drsolver.py");
+    outfile <<"from z3 import *\n";
+    outfile.close();
+    
+  }catch(...){
+    llvm::outs() << "Error while solving for data race\n";
+  }
+  
+  
  
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wall"   // Ignore all warnings
-    //write to smt solver
-    z3::context ctx;
-    z3::solver solver(ctx);
-    z3::expr x = ctx.int_const("x");
-    z3::expr y = ctx.int_const("y");
-    solver.add(x + y == 3);
-    solver.add(x == y);
+  
 
-    if (solver.check() == z3::sat) {
-        llvm::outs() << "Satisfiable!\n";
-    } else {
-        llvm::outs() << "No solution found." << "\n";
-    }
-  #pragma clang diagnostic pop
   
 
 

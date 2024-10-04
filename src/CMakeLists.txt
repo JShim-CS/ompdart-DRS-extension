@@ -14,5 +14,4 @@ add_library(ompdart MODULE
     ControlRegions.cpp
 )
 
-find_package(Z3 REQUIRED)
-target_link_libraries(ompdart PRIVATE z3)
+
