@@ -18,6 +18,7 @@
 #include <cctype>  
 #include<iostream>
 #include<fstream>
+#include <memory>
 
 
 
@@ -457,6 +458,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     outfile <<"from z3 import *\n";
     outfile << "solver=Solver()\n";
     int wr_counter = 0;
+    std::vector<std::unique_ptr<std::vector<std::string>>> writeVector;
     for (const auto &pair : this->writeMap) {
       std::string info = pair.first;
       int pipeCounter = 0;
@@ -522,14 +524,48 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       if(condition == ""){
         condition = "True";
       }
-      
+
       outfile << "wr_cond_"+ std::to_string(wr_counter) 
                 + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter)
                + " == " + arrIndex +", " + processedLoopPredicate +", " + condition + ")\n";
       //outfile<<processedLoopPredicate<<"\n";
-      wr_counter++;
+      writeVector.push_back(std::make_unique<std::vector<std::string>>());
 
+      writeVector[wr_counter]->push_back("wr_cond_"+ std::to_string(wr_counter));
+      writeVector[wr_counter]->push_back("wr_arr_index_" + std::to_string(wr_counter));
+      writeVector[wr_counter]->push_back(loopVariable);
+
+      wr_counter++;
     }
+
+    wr_counter = 0;
+    std::unordered_map<std::string, bool> finalConds;
+    for(int i = 0; i < writeVector.size(); i++){
+      for (int j = i+1; j < writeVector.size(); j++){
+        
+        finalConds["waw_cond_" + std::to_string(wr_counter)] = true;
+        outfile <<"waw_cond_" + std::to_string(wr_counter) 
+                <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +writeVector[j]->at(1) + "), "
+                << writeVector[j]->at(0) + ", (" + writeVector[i]->at(2) + " != " + writeVector[j]->at(2) +"))\n";
+        wr_counter++;
+      }
+    }
+    outfile <<"waws = Or(";
+    wr_counter = 0;
+    for (const auto &pair : finalConds) {
+      if(wr_counter == finalConds.size()-1){
+        outfile <<pair.first + ")\n";
+      }else{
+        outfile << pair.first +  ", ";
+      }
+      
+      wr_counter++;
+    }
+    outfile << "solver.add(waws)\n";
+    outfile << "if solver.check() == z3.sat:\n";
+    outfile << "\tprint(\"data race(waw) exists within the loop!\")\n";
+
+
 
 
     outfile.close();
