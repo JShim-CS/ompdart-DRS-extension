@@ -16,7 +16,6 @@
 #include <unordered_map>
 #include <algorithm>
 #include <cctype>  
-
 #include<iostream>
 #include<fstream>
 
@@ -259,20 +258,20 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &ind
     switch(code){
       case 1:
         if(increment){
-          return "(" + indexVar  +" >= " + std::to_string(b1) + ") && "
-              + "(" + indexVar +" "+ bound2 + ")";
+          return "( XXX  >= " + std::to_string(b1) + ") && "
+              + "( XXX "+ bound2 + ")";
         }else{
-          return "(" + indexVar  +" <= " + std::to_string(b1) + ") && "
-              + "(" + indexVar + " " + bound2 + ")";
+          return "( XXX  <= " + std::to_string(b1) + ") && "
+              + "( XXX " + bound2 + ")";
         }
 
       case 2:
         if(increment){
-          return "(" + indexVar  +" >= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + " " + indexVar +")";
+          return "( XXX  >= " + std::to_string(b1) + ") && "
+              + "(" + bound2 + " XXX )";
         }else{
-          return "(" + indexVar  +" <= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + " " + indexVar +  ")";
+          return "( XXX <= " + std::to_string(b1) + ") && "
+              + "(" + bound2 + " XXX )";
         }
         
     }
@@ -442,6 +441,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   for (const auto &pair : Visitor->allVars) {
     llvm::outs() << pair.first <<"\n";
   }
+
   llvm::outs()<< "WRITES:\n";
   for (const auto &pair : this->writeMap) {
     llvm::outs() << pair.first <<"\n";
@@ -454,11 +454,76 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
   std::ofstream outfile("drsolver.py");
   try{
-    if (!outfile) {
-        llvm::outs() << "Error: File could not be created!\n"; 
-    }
     outfile <<"from z3 import *\n";
-    outfile << "print(\"HI\")\n";
+    outfile << "solver=Solver()\n";
+    int wr_counter = 0;
+    for (const auto &pair : this->writeMap) {
+      std::string info = pair.first;
+      int pipeCounter = 0;
+      std::string temp = "";
+      std::string arrName = "";
+      std::string arrIndex = "";
+      std::string loopVariable = "";
+      std::string condition = "";
+      for(char c : info){//process string
+        if(c == '|'){
+          if(!pipeCounter){//if pipeCounter is zero
+            arrName = temp;
+            temp = "";
+            pipeCounter++;
+          }else if(pipeCounter == 1){
+            arrIndex = temp;
+            pipeCounter++;
+            temp = "";
+          }else if(pipeCounter == 2){
+            loopVariable = temp;
+            pipeCounter++;
+            temp = "";
+          }
+        }else{
+          if(pipeCounter < 3){
+            temp += c;
+          }else{
+            condition += c;
+          }
+        }
+      }
+
+      llvm::outs()<<"Array Name : " << arrName <<"\n";
+      llvm::outs()<<"Array Index : " << arrIndex <<"\n";
+      llvm::outs()<<"Loop Var : " << loopVariable <<"\n";
+      llvm::outs()<<"Condition : " << condition <<"\n";
+
+      //std::replace(arrIndex.begin(), arrIndex.end(), '(', ' ');
+      //std::replace(arrIndex.begin(), arrIndex.end(), ')', ' ');
+      //arrIndex.erase(std::remove_if(arrIndex.begin(), arrIndex.end(), ::isspace), arrIndex.end());
+      outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
+      outfile << "wr_arr_index_" + std::to_string(wr_counter) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter) +"\")\n";
+      std::string processedLoopPredicate = predicate_string[0];
+      if(predicate_string[0] != ""){
+        size_t firstPos = predicate_string[0].find("XXX");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,3,loopVariable);
+        }
+
+        firstPos = processedLoopPredicate.find("&&");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,2,",");
+        }
+
+        firstPos = processedLoopPredicate.find("XXX");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,3,loopVariable);
+        }
+
+      }
+      outfile << "wr_cond_"+ std::to_string(wr_counter) + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter) + " == " + arrIndex +", " + processedLoopPredicate + ")\n";
+      //outfile<<processedLoopPredicate<<"\n";
+      wr_counter++;
+
+    }
+
+
     outfile.close();
     
   }catch(...){
