@@ -517,7 +517,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
 
       }
-      outfile << "wr_cond_"+ std::to_string(wr_counter) + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter) + " == " + arrIndex +", " + processedLoopPredicate + ")\n";
+
+      //quick dirty fix, fix it later
+      if(condition == ""){
+        condition = "True";
+      }
+      
+      outfile << "wr_cond_"+ std::to_string(wr_counter) 
+                + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter)
+               + " == " + arrIndex +", " + processedLoopPredicate +", " + condition + ")\n";
       //outfile<<processedLoopPredicate<<"\n";
       wr_counter++;
 
@@ -551,7 +559,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
     std::string op = binOp->getOpcodeStr().str();
     std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
     std::string left = this->recursivelySetTheString(binOp->getLHS(),v,indexV);
-    
+    //llvm::outs() << "OP: " << op << "\n"; 
     return left + " " + op + " " + right;
   }else if(const DeclRefExpr *declRef = dyn_cast<DeclRefExpr>(exp)){
     //llvm::outs() << "inside" <<"\n";
@@ -567,6 +575,16 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
   }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
     const clang::Expr *childExpr = ice->getSubExpr();
     return this->recursivelySetTheString(childExpr,v,indexV);
+  }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
+    const Expr *e = UOp->getSubExpr();
+    std::string uop = UOp->getOpcodeStr(UOp->getOpcode()).str();
+    if(uop == "!"){
+      uop = "not";
+    }
+    return uop + this->recursivelySetTheString(e, v, indexV);
+  }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
+    const Expr *e = Pop->getSubExpr();
+    return "("+this->recursivelySetTheString(e, v, indexV)+")";
   }else{
     SourceRange expRange = exp->getSourceRange();
     StringRef expText = Lexer::getSourceText(CharSourceRange::getTokenRange(expRange), 
@@ -619,7 +637,8 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const st
     std::string op = binOp->getOpcodeStr().str();
 
     std::string realCondition = controlCondition;
-    if(controlCondition.find('=') != std::string::npos){ //control statement has assignment op as well
+    //assume that the code is well-formatted
+    if(controlCondition.find(" = ") != std::string::npos){ //control statement has assignment op as well
       //for over-approximation we set all assignment in the control statement predicate as true
       //if(a[i] = v){a[i+2]=0;} --> this could lead to datarace regardless of what the value of v is
       realCondition = "True";
@@ -646,6 +665,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const st
       this->readMap[read+"|"+realCondition] = true;
     }
     
+  }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
+    this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition);
+  }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
+    this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition);
   }
 
 }

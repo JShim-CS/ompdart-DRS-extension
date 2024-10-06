@@ -13,7 +13,12 @@ void func(){
         if(a[i+2] = 0){
             a[i] = a[i+3];
         }
-        a[i*2] = 131;
+
+        //double negation not allowed
+        if((i%2 != 0)){
+            a[i+5] = 10;
+        }
+        
        
     }
     v+=k;
