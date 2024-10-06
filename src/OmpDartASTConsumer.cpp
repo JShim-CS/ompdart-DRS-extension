@@ -554,7 +554,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         wr_counter++;
       }
     }
-    outfile <<"waws = Or(";
+    if(writeVector.size() >= 2){
+      outfile <<"waws = Or(";
+    }else{
+      outfile <<"waws = False\n";
+    }
+    
     wr_counter = 0;
     for (const auto &pair : wawFinalConds) {
       if(wr_counter == wawFinalConds.size()-1){
@@ -658,7 +663,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         wr_counter++;
       }
     }
-    outfile <<"raws = Or(";
+    if(writeVector.size() >= 1 && readVector.size() >= 1){
+      outfile <<"raws = Or(";
+    }else{
+      outfile <<"raws = False\n";
+    }
     wr_counter = 0;
     for (const auto &pair : rawFinalConds) {
       if(wr_counter == rawFinalConds.size()-1){
@@ -674,6 +683,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
     outfile << "\tprint(\"data race(waw/raw/war) exists within the loop!\")\n";
+    outfile <<"else:\n";
+    outfile<<"\tprint(\"seems like no data race exists (please double check)\")\n";
 
 
 

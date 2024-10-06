@@ -10,16 +10,9 @@ void func(){
     v+=j;
     #pragma drd
     for(int i = 0; i < 1000; i++){
-        if(a[i+2] = 0){
-            a[i] = a[i+3];
-        }
-
-        //double negation not allowed
-        if((i%2 != 0)){
-            a[i+5] = 10;
-        }
         
-       
+       a[i] = 20;
+       k = a[i+2];
     }
     v+=k;
     
