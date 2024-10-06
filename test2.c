@@ -11,10 +11,13 @@ void func(){
     #pragma drd
     for(int i = 0; i < 1000; i++){
         if(a[i+2] = 0){
-            a[i+10000] = a[i+3];
+            a[i] = a[i+3];
         }
 
-        
+        //double negation not allowed
+        if((i%2 != 0)){
+            a[i+5] = 10;
+        }
         
        
     }

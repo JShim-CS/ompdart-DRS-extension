@@ -457,6 +457,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   try{
     outfile <<"from z3 import *\n";
     outfile << "solver=Solver()\n";
+    for (const auto &pair : Visitor->allVars) {
+      outfile << pair.first + " = " + "Int(\""+pair.first+"\")\n";
+    }
+    
     int wr_counter = 0;
     std::vector<std::unique_ptr<std::vector<std::string>>> writeVector;
     for (const auto &pair : this->writeMap) {
@@ -539,11 +543,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     }
 
     wr_counter = 0;
-    std::unordered_map<std::string, bool> finalConds;
+    std::unordered_map<std::string, bool> wawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = i+1; j < writeVector.size(); j++){
         
-        finalConds["waw_cond_" + std::to_string(wr_counter)] = true;
+        wawFinalConds["waw_cond_" + std::to_string(wr_counter)] = true;
         outfile <<"waw_cond_" + std::to_string(wr_counter) 
                 <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +writeVector[j]->at(1) + "), "
                 << writeVector[j]->at(0) + ", (" + writeVector[i]->at(2) + " != " + writeVector[j]->at(2) +"))\n";
@@ -552,8 +556,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     }
     outfile <<"waws = Or(";
     wr_counter = 0;
-    for (const auto &pair : finalConds) {
-      if(wr_counter == finalConds.size()-1){
+    for (const auto &pair : wawFinalConds) {
+      if(wr_counter == wawFinalConds.size()-1){
         outfile <<pair.first + ")\n";
       }else{
         outfile << pair.first +  ", ";
@@ -561,9 +565,115 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       
       wr_counter++;
     }
-    outfile << "solver.add(waws)\n";
+
+    outfile<<"\n";
+    int r_counter = 0;
+    std::vector<std::unique_ptr<std::vector<std::string>>> readVector;
+    for (const auto &pair : this->readMap) {
+      std::string info = pair.first;
+      int pipeCounter = 0;
+      std::string temp = "";
+      std::string arrName = "";
+      std::string arrIndex = "";
+      std::string loopVariable = "";
+      std::string condition = "";
+      for(char c : info){//process string
+        if(c == '|'){
+          if(!pipeCounter){//if pipeCounter is zero
+            arrName = temp;
+            temp = "";
+            pipeCounter++;
+          }else if(pipeCounter == 1){
+            arrIndex = temp;
+            pipeCounter++;
+            temp = "";
+          }else if(pipeCounter == 2){
+            loopVariable = temp;
+            pipeCounter++;
+            temp = "";
+          }
+        }else{
+          if(pipeCounter < 3){
+            temp += c;
+          }else{
+            condition += c;
+          }
+        }
+      }
+
+      llvm::outs()<<"Array Name : " << arrName <<"\n";
+      llvm::outs()<<"Array Index : " << arrIndex <<"\n";
+      llvm::outs()<<"Loop Var : " << loopVariable <<"\n";
+      llvm::outs()<<"Condition : " << condition <<"\n";
+
+      
+      //llvm::outs() <<"!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+      outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
+      outfile << "r_arr_index_" + std::to_string(r_counter) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter) +"\")\n";
+      std::string processedLoopPredicate = predicate_string[0];
+      if(predicate_string[0] != ""){
+        size_t firstPos = predicate_string[0].find("XXX");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,3,loopVariable);
+        }
+
+        firstPos = processedLoopPredicate.find("&&");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,2,",");
+        }
+
+        firstPos = processedLoopPredicate.find("XXX");
+        if(firstPos != std::string::npos){
+          processedLoopPredicate.replace(firstPos,3,loopVariable);
+        }
+
+      }
+
+      //quick dirty fix, fix it later
+      if(condition == ""){
+        condition = "True";
+      }
+
+      outfile << "r_cond_"+ std::to_string(r_counter) 
+                + " = And ("+ "r_arr_index_" + std::to_string(r_counter)
+               + " == " + arrIndex +", " + processedLoopPredicate +", " + condition + ")\n";
+      //outfile<<processedLoopPredicate<<"\n";
+      readVector.push_back(std::make_unique<std::vector<std::string>>());
+
+      readVector[r_counter]->push_back("r_cond_"+ std::to_string(r_counter));
+      readVector[r_counter]->push_back("r_arr_index_" + std::to_string(r_counter));
+      readVector[r_counter]->push_back(loopVariable);
+      r_counter++;
+    }
+
+
+    wr_counter = 0;
+    std::unordered_map<std::string, bool> rawFinalConds;
+    for(int i = 0; i < writeVector.size(); i++){
+      for (int j = 0; j < readVector.size(); j++){
+        rawFinalConds["raw_cond_" + std::to_string(wr_counter)] = true;
+        outfile <<"raw_cond_" + std::to_string(wr_counter) 
+                <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +readVector[j]->at(1) + "), "
+                << readVector[j]->at(0) + ", (" + writeVector[i]->at(2) + " != " + readVector[j]->at(2) +"))\n";
+        wr_counter++;
+      }
+    }
+    outfile <<"raws = Or(";
+    wr_counter = 0;
+    for (const auto &pair : rawFinalConds) {
+      if(wr_counter == rawFinalConds.size()-1){
+        outfile <<pair.first + ")\n";
+      }else{
+        outfile << pair.first +  ", ";
+      }
+      wr_counter++;
+    }
+
+
+    outfile<<"cstrnts = Or(waws,raws)\n";
+    outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
-    outfile << "\tprint(\"data race(waw) exists within the loop!\")\n";
+    outfile << "\tprint(\"data race(waw/raw/war) exists within the loop!\")\n";
 
 
 
