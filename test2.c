@@ -78,57 +78,57 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
 /*
-A loop with loop-carried anti-dependence.
-Data race pair: a[i+1]@64:10 vs. a[i]@64:5
+A linear expression is used as array subscription.
+Data race pair: a[2i+1]@64:5 vs. a[i]@64:14
 */
+#include <stdlib.h>
 #include <stdio.h>
 #include <omp.h> 
-// int dummyMethod1();
-// int dummyMethod2();
-// int dummyMethod3();
-// int dummyMethod4();
+int dummyMethod1();
+int dummyMethod2();
+int dummyMethod3();
+int dummyMethod4();
 
 int main(int argc,char *argv[])
 {
   int i;
-  int len = 1000;
-  int a[1000];
+  int a[2000];
   int _ret_val_0;
-//   dummyMethod1();
+  dummyMethod1();
   
-// #pragma omp parallel for private (i)
-// //#pragma rose_outline
-//   for (i = 0; i <= len - 1; i += 1) {
-//     a[i] = i;
-//   }
-//   dummyMethod2();
-//   dummyMethod3();
-  #pragma drd
-  for (i = 0; i <= len - 1 - 1; i += 1) {
-    a[i] = a[i + 1] + 1;
+#pragma omp parallel for private (i)
+//#pragma rose_outline
+  for (i = 0; i <= 1999; i += 1) {
+    a[i] = i;
   }
-  // dummyMethod4();
-  // printf("a[500]=%d\n",a[500]);
-  // _ret_val_0 = 0;
+  dummyMethod2();
+  dummyMethod3();
+  #pragma drd
+  for (i = 0; i <= 999; i += 1) {
+    a[2 * i + 1] = a[i] + 1;
+  }
+  dummyMethod4();
+  printf("a[1001]=%d\n",a[1001]);
+  _ret_val_0 = 0;
   return _ret_val_0;
 }
 
-// int dummyMethod1()
-// {
-//   return 0;
-// }
+int dummyMethod1()
+{
+  return 0;
+}
 
-// int dummyMethod2()
-// {
-//   return 0;
-// }
+int dummyMethod2()
+{
+  return 0;
+}
 
-// int dummyMethod3()
-// {
-//   return 0;
-// }
+int dummyMethod3()
+{
+  return 0;
+}
 
-// int dummyMethod4()
-// {
-//   return 0;
-// }
+int dummyMethod4()
+{
+  return 0;
+}

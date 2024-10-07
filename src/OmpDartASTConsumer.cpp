@@ -320,7 +320,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for(AccessInfo a : ai){
       v++;
       //foundForLoop
-      llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
+      //llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
@@ -329,7 +329,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         predicate_string.push_back(str);
         continue;
       }
-      if(a.Barrier == LoopEnd)break;
+      if(!stillSearching && a.Barrier == LoopEnd)break;
       
       
       if(!stillSearching){
@@ -346,7 +346,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           //  llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
           //  exit(0);
           //}
-      }
+        }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
