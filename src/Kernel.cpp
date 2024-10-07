@@ -8,6 +8,9 @@ Kernel::Kernel(const OMPExecutableDirective *TD, const FunctionDecl *FD,
                ASTContext *Context)
     : Context(Context), TD(TD), FD(FD) {}
 
+Kernel::Kernel(const Stmt* S, const FunctionDecl *FD,
+         ASTContext *Context ): Context(Context), S(S), FD(FD) {}
+
 const OMPExecutableDirective *Kernel::getDirective() const { return TD; }
 
 const FunctionDecl *Kernel::getFunction() const { return FD; }

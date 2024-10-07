@@ -205,6 +205,13 @@ bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   if (!inLastFunction(FS->getBeginLoc())){
     return true;
   }else{
+    if ( SM->getSpellingLineNumber(FS->getBeginLoc()) == (*drdPragmaLineNumber) + 1) {
+      LastKernel = new Kernel((Stmt *) FS, LastFunction->getDecl(), Context);
+      LastFunction->recordTargetRegion(LastKernel);
+      Kernels.push_back(LastKernel);
+      return true;
+    }
+
     uint8_t Flags =  A_NOP;
     llvm::outs()<<"\nrecorded" << SM->getSpellingLineNumber(FS->getBeginLoc()) << "\n";
     LastFunction->recordAccess(NULL, FS->getBeginLoc(), FS, Flags, false);

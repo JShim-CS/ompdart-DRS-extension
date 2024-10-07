@@ -13,6 +13,7 @@ class Kernel {
 private:
   ASTContext *Context; 
   const OMPExecutableDirective *TD;
+  const Stmt* S;
   const FunctionDecl *FD;
 
   boost::container::flat_set<const ValueDecl *> PrivateDecls;
@@ -33,6 +34,8 @@ private:
 public:
   Kernel(const OMPExecutableDirective *TD, const FunctionDecl *FD,
          ASTContext *Context);
+  Kernel(const Stmt* S, const FunctionDecl *FD,
+         ASTContext *Context );
 
   const OMPExecutableDirective *getDirective() const;
   const FunctionDecl *getFunction() const;

@@ -69,7 +69,6 @@ int DataTracker::recordAccess(const ValueDecl *VD, SourceLocation Loc,
   SourceManager &SM = Context->getSourceManager();
   if (LastKernel) {
     if(!VD){
-      llvm::outs()<<"YEET2!\n";
       AccessInfo NewEntry = {};
       NewEntry.VD = VD;
       NewEntry.S = S;
@@ -114,15 +113,6 @@ int DataTracker::recordAccess(const ValueDecl *VD, SourceLocation Loc,
     //   Flags |= A_OFFLD;
   }
 
-  if(!VD){
-      llvm::outs()<<"YEET!\n";
-      AccessInfo NewEntry = {};
-      NewEntry.VD = VD;
-      NewEntry.S = S;
-      NewEntry.Loc = Loc;
-      NewEntry.Flags = Flags;
-      return insertAccessLogEntry(NewEntry);
-  }
   // check for existing log entry
   for (int I = AccessLog.size() - 1; I >= 0; --I) {
     if (AccessLog[I].VD == VD && AccessLog[I].Loc == Loc) {
