@@ -202,49 +202,6 @@ bool OmpDartASTVisitor::VisitDoStmt(DoStmt *DS) {
 bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   if (!FS->getBeginLoc().isValid() || !SM->isInMainFile(FS->getBeginLoc()))
     return true;
-
-  
-  //added by Junhyung Shim, add the expressions and statements into a data structure
-  //switch to get condition variable later on?
-
-  //check if #pragma drd is on top of the for loop using SourceLocation
-  
-  SourceLocation ThisLine = FS->getBeginLoc();
-
-  //llvm::outs() << "INSIDE FOR STMT: " << *(this->drdPragmaLineNumber) << "\n";
-  
-
-  unsigned thisLine = SM->getSpellingLineNumber(ThisLine);
-
-  //llvm::outs() << thisLine <<"\n";
-  //llvm::outs() << *(this->drdPragmaLineNumber) << "\n";
-
-  if(thisLine == *(this->drdPragmaLineNumber) + 1){
-    Stmt *init = FS->getInit();
-    Expr *inc = FS->getInc();
-    Expr *cond = FS->getCond();
-    bool invalid;
-
-    SourceLocation initStartLocation = init->getBeginLoc();
-    SourceLocation initEndLocation = init->getEndLoc();
-    CharSourceRange initConditionRange = CharSourceRange::getTokenRange(initStartLocation,initEndLocation);
-    StringRef initstr = Lexer::getSourceText(initConditionRange,*SM,(*CI).getLangOpts(),&invalid);
-
-
-    SourceLocation incStartLocation = inc->getBeginLoc();
-    SourceLocation incEndLocation = inc->getEndLoc();
-    CharSourceRange incConditionRange = CharSourceRange::getTokenRange(incStartLocation,incEndLocation);
-    StringRef incstr = Lexer::getSourceText(incConditionRange,*SM,(*CI).getLangOpts(),&invalid);
-
-
-    SourceLocation condStartLocation = cond->getBeginLoc();
-    SourceLocation condEndLocation = cond->getEndLoc();
-    CharSourceRange condConditionRange = CharSourceRange::getTokenRange(condStartLocation,condEndLocation);
-    StringRef condstr = Lexer::getSourceText(condConditionRange,*SM,(*CI).getLangOpts(),&invalid);
-
-    llvm::outs() << "init: " << initstr << ", condition: " << condstr << ", increment: " << incstr <<"\n";
-  }
-
   if (!inLastFunction(FS->getBeginLoc()))
     return true;
 

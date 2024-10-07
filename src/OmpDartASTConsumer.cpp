@@ -283,7 +283,7 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &ind
 void OmpDartASTConsumer::recordReadAndWrite(){
   DataTracker *TargetFunction = NULL;
 
-  llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << this->drdPragmaLineNumber << "\n";
+  llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << *(this->drdPragmaLineNumber) << "\n";
   for(DataTracker *DT : FunctionTrackers){
     std::vector<const Stmt*> loops = DT->getLoops();
     for(const Stmt* s : loops){
@@ -293,7 +293,9 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         break;
       }
     }
-    if(TargetFunction)break;
+    if(TargetFunction){
+      break;
+    }
   }
 
   //dive into targetFunction to map out the predicates of conditionals
@@ -317,6 +319,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for(AccessInfo a : ai){
       v++;
       //foundForLoop
+      llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
@@ -411,7 +414,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           
           //if(requiredCondition != ""){
             llvm::outs() <<  "(" << exp <<" requires: ";
-            this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition);
+            this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition,false);
             llvm::outs() << requiredCondition << " ) ";
             if(a.ArraySubscript){
               const Expr *base = a.ArraySubscript->getBase();
@@ -538,23 +541,25 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       writeVector[wr_counter]->push_back("wr_cond_"+ std::to_string(wr_counter));
       writeVector[wr_counter]->push_back("wr_arr_index_" + std::to_string(wr_counter));
       writeVector[wr_counter]->push_back(loopVariable);
+      writeVector[wr_counter]->push_back(arrName);
 
       wr_counter++;
     }
-
+    int wawCount = 0;
     wr_counter = 0;
     std::unordered_map<std::string, bool> wawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = i+1; j < writeVector.size(); j++){
-        
+        if(writeVector[i]->at(3) != writeVector[j]->at(3))continue;
         wawFinalConds["waw_cond_" + std::to_string(wr_counter)] = true;
         outfile <<"waw_cond_" + std::to_string(wr_counter) 
                 <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +writeVector[j]->at(1) + "), "
                 << writeVector[j]->at(0) + ", (" + writeVector[i]->at(2) + " != " + writeVector[j]->at(2) +"))\n";
+        wawCount++;
         wr_counter++;
       }
     }
-    if(writeVector.size() >= 2){
+    if(wawCount>=1){
       outfile <<"waws = Or(";
     }else{
       outfile <<"waws = False\n";
@@ -648,22 +653,25 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       readVector[r_counter]->push_back("r_cond_"+ std::to_string(r_counter));
       readVector[r_counter]->push_back("r_arr_index_" + std::to_string(r_counter));
       readVector[r_counter]->push_back(loopVariable);
+      readVector[r_counter]->push_back(arrName);
       r_counter++;
     }
 
-
+    int rawCount = 0;
     wr_counter = 0;
     std::unordered_map<std::string, bool> rawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = 0; j < readVector.size(); j++){
+        if(readVector[j]->at(3) != writeVector[i]->at(3))continue;
         rawFinalConds["raw_cond_" + std::to_string(wr_counter)] = true;
         outfile <<"raw_cond_" + std::to_string(wr_counter) 
                 <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +readVector[j]->at(1) + "), "
                 << readVector[j]->at(0) + ", (" + writeVector[i]->at(2) + " != " + readVector[j]->at(2) +"))\n";
+        rawCount++;
         wr_counter++;
       }
     }
-    if(writeVector.size() >= 1 && readVector.size() >= 1){
+    if(rawCount>=1){
       outfile <<"raws = Or(";
     }else{
       outfile <<"raws = False\n";
@@ -789,10 +797,13 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *
   }
 }
 
-void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition){
+
+
+//we need to update this method to support multiple arrays
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition, bool isWrite){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
-
+    //llvm::outs() << "\nOOOPPPS: " << op <<"\n";
     std::string realCondition = controlCondition;
     //assume that the code is well-formatted
     if(controlCondition.find(" = ") != std::string::npos){ //control statement has assignment op as well
@@ -810,22 +821,61 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const st
       CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
       bool invalid; //is this even needed??
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
-      std::string write = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
-      
-
-      this->writeMap[sr.str()+"|("+write+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+      std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+      if(op == "="){
+        this->writeMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+      }else{
+        this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+      }
+    }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
+      if(op == "="){
+        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,true);
+      }else{
+        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false);
+      }
+    }else{
+      this->setArrayIndexEncoding(binOp->getLHS(),v,indexV,controlCondition,false);
     }
 
     *v += 1;
-    std::string read =  this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
-    if(read != ""){
-      this->readMap[read+"|"+realCondition] = true;
+
+
+    if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getRHS())){
+      int indexPos = 0;
+      const Expr *base = arrayExpr->getBase();
+      SourceLocation bloc = base->getBeginLoc();
+      SourceLocation eloc = base->getEndLoc();
+      CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+      bool invalid; //is this even needed??
+      StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
+      std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+      this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+      
+    }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
+      this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false);
+    }else{
+      this->setArrayIndexEncoding(binOp->getRHS(),v,indexV,controlCondition,false);
     }
     
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
-    this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition);
+    this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition,false);
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
-    this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition);
+    this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false);
+
+  }else if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
+      int indexPos = 0;
+      const Expr *base = arrayExpr->getBase();
+      SourceLocation bloc = base->getBeginLoc();
+      SourceLocation eloc = base->getEndLoc();
+      CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+      bool invalid; //is this even needed??
+      StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
+      std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+      if(isWrite){
+        this->writeMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+controlCondition] = true;
+      }else{
+        this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+controlCondition] = true;
+      }
   }
 
 }

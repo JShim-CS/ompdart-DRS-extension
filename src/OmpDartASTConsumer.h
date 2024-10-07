@@ -38,9 +38,8 @@ private:
   void recordReadAndWrite();
   std::string setStringForRegion(const Expr *exp, int *v, const std::string &indexV);
   std::string recursivelySetTheString(const Expr *exp, int *v, const std::string &indexV);
-  void setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition);
+  void setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition, bool isWrite);
   std::string recursivelyFindArrayIndex(const Expr *exp, int *v, const std::string &indexV);
-  
 }; // end class OmpDartASTConsumer
 
 #endif
