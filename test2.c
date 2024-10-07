@@ -5,11 +5,6 @@ int main(int argc,char *argv[]){
   int b[100];
   int _ret_val_0;
   
-
-  for (i = 0; i <= len - 1; i += 1) {
-    a[i] = i;
-    b[i] = i + 1;
-  }
   
   #pragma drd
   for (i = 0; i <= len - 1 - 1; i++) {
