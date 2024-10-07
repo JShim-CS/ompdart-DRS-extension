@@ -202,8 +202,13 @@ bool OmpDartASTVisitor::VisitDoStmt(DoStmt *DS) {
 bool OmpDartASTVisitor::VisitForStmt(ForStmt *FS) {
   if (!FS->getBeginLoc().isValid() || !SM->isInMainFile(FS->getBeginLoc()))
     return true;
-  if (!inLastFunction(FS->getBeginLoc()))
+  if (!inLastFunction(FS->getBeginLoc())){
     return true;
+  }else{
+    uint8_t Flags =  A_NOP;
+    llvm::outs()<<"\nrecorded" << SM->getSpellingLineNumber(FS->getBeginLoc()) << "\n";
+    LastFunction->recordAccess(NULL, FS->getBeginLoc(), FS, Flags, false);
+  }
 
   LastFunction->recordLoop(FS);
   return true;
