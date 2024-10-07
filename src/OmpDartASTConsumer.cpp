@@ -293,6 +293,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         break;
       }
     }
+    
     if(TargetFunction){
       break;
     }
@@ -341,10 +342,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
         if(const clang::BinaryOperator *binOp = llvm::dyn_cast<clang::BinaryOperator>(a.S)){
           std::string op = binOp->getOpcodeStr().str();
-          if(op == "+=" || op == "-=" || op == "*=" || op == "/="){
-            llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
-            exit(0);
-          }
+          //if(op == "+=" || op == "-=" || op == "*=" || op == "/="){
+          //  llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
+          //  exit(0);
+          //}
       }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
@@ -392,7 +393,22 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     if(requiredCondition != ""){
                       requiredCondition += " AND ";
                     }
-                    requiredCondition += "!(" + this->recursivelySetTheString(ifs->getCond(),&v,indexV) + ")";
+                    std::string tempCond = this->recursivelySetTheString(ifs->getCond(),&v,indexV);
+                    
+                    if(tempCond.find("<=") != std::string::npos){
+                      tempCond.replace(tempCond.find("<="),2,">");
+                    }else if(tempCond.find(">=") != std::string::npos){
+                      tempCond.replace(tempCond.find(">="),2,"<");
+                    }else if(tempCond.find(">") != std::string::npos){
+                      tempCond.replace(tempCond.find(">"),1,"<=");
+                    }else if(tempCond.find("<") != std::string::npos){
+                      tempCond.replace(tempCond.find("<"),1,">=");
+                    }else if(tempCond.find("!=") != std::string::npos){
+                      tempCond.replace(tempCond.find("!="),2,"==");
+                    }else if(tempCond.find("==") != std::string::npos){
+                      tempCond.replace(tempCond.find("=="),2,"!=");
+                    }
+                    requiredCondition += "(" + tempCond + ")";
                   }else{
                     if(requiredCondition != ""){
                       requiredCondition += " AND ";
@@ -690,7 +706,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     outfile<<"cstrnts = Or(waws,raws)\n";
     outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
-    outfile << "\tprint(\"data race(waw/raw/war) exists within the loop!\")\n";
+    outfile << "\tprint(\"seems like data race(waw/raw/war) exists within the loop!\")\n";
     outfile <<"else:\n";
     outfile<<"\tprint(\"seems like no data race exists (please double check)\")\n";
 
@@ -743,9 +759,9 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
     const Expr *e = UOp->getSubExpr();
     std::string uop = UOp->getOpcodeStr(UOp->getOpcode()).str();
-    if(uop == "!"){
-      uop = "not";
-    }
+    // if(uop == "!"){
+    //   uop = "not";
+    // }
     return uop + this->recursivelySetTheString(e, v, indexV);
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
     const Expr *e = Pop->getSubExpr();

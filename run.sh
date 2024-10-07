@@ -7,6 +7,7 @@ PLUGIN="ompdart"
 CFLAGS=-fopenmp
 COMMAND="clang -w $CFLAGS -Xclang -load -Xclang $LIB -Xclang -plugin -Xclang $PLUGIN"
 DRSOLVE="python3 drsolver.py"
+RM="rm drsolver.py"
 while [ "$1" != "" ]; do
     case $1 in
         -h | --help )
@@ -48,6 +49,7 @@ OUTFILENAME=$2
 set -x
 $COMMAND
 $DRSOLVE
+#$RM
 
 # help
 # clang -Xclang -load -Xclang $LIB -Xclang -plugin -Xclang $PLUGIN -Xclang -plugin-arg-$PLUGIN -Xclang --help -fopenmp -c $FILENAME

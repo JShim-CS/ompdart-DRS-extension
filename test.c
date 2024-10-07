@@ -5,10 +5,17 @@ int main(int argc,char *argv[]){
   int b[100];
   int _ret_val_0;
   
+
   
+ 
   #pragma drd
   for (i = 0; i <= len - 1 - 1; i++) {
-    a[i + 1] = a[i] + b[i];
+    if(i%2 == 0){
+      a[i + 1] = a[i] + b[i];
+    }else{
+      a[i] = b[i];
+    }
+    
   }
  
   for (i = 0; i <= len - 1; i += 1) {
