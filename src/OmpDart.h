@@ -7,6 +7,18 @@
 
 #include "OmpDartASTConsumer.h"
 #include "DrdpragmaHandler.h"
+#include <unordered_map>
+
+class MacroCallback : public PPCallbacks {
+public:
+
+    std::unordered_map<std::string, std::string> *macros;
+    void MacroDefined(const clang::Token &MacroNameTok, const clang::MacroDirective *MD) override {
+      std::string key = MacroNameTok.getIdentifierInfo()->getName().str();
+      std::string replacement = MD->getMacroInfo()->getReplacementToken(0).getLiteralData();
+      (*macros)[key] = replacement;
+    }
+};
 
 
 class OmpDartASTAction : public PluginASTAction {
@@ -14,11 +26,15 @@ private:
   std::string OutFilePath;
   bool Aggressive = false;
   std::unique_ptr<DrdpragmaHandler> ptr;
+  std::unique_ptr<MacroCallback> mcbPtr;
+  std::unordered_map<std::string, std::string> macros;
   unsigned *drdPragmaLineNumber = NULL;
   
 public:
     OmpDartASTAction() {
       this->ptr = std::make_unique<DrdpragmaHandler>();
+      this->mcbPtr = std::make_unique<MacroCallback>();
+      this->mcbPtr->macros = &(this->macros);
       this->drdPragmaLineNumber = (unsigned*) malloc(sizeof(unsigned));
       this->ptr->lineNumber = this->drdPragmaLineNumber;
     }
@@ -32,9 +48,9 @@ protected:
                                                  llvm::StringRef) override {
     Preprocessor &PP = CI.getPreprocessor();
     PP.AddPragmaHandler(ptr.get());
-    
-    
-    return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive, this->ptr->lineNumber);
+    PP.addPPCallbacks(std::move(this->mcbPtr));
+
+    return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive, this->ptr->lineNumber, &macros);
   }
   
    

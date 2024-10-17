@@ -8,6 +8,9 @@
 
 using namespace clang;
 
+
+
+
 class OmpDartASTConsumer : public ASTConsumer {
   ASTContext *Context;
   SourceManager *SM;
@@ -16,7 +19,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   std::string OutFilePath;
   bool Aggressive;
   unsigned *drdPragmaLineNumber;
-  
+  std::unordered_map<std::string, std::string> *macros;
 
 
   std::vector<DataTracker *> &FunctionTrackers;
@@ -28,7 +31,7 @@ class OmpDartASTConsumer : public ASTConsumer {
 
 public:
   explicit OmpDartASTConsumer(CompilerInstance *CI,
-                              const std::string *OutFilePath, bool Aggressive, unsigned* drdPragmaLine);
+                              const std::string *OutFilePath, bool Aggressive, unsigned* drdPragmaLine, std::unordered_map<std::string, std::string> *macros);
 
   virtual void HandleTranslationUnit(ASTContext &Context);
 

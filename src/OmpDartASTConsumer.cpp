@@ -26,11 +26,11 @@ using namespace clang;
 
 OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
                                        const std::string *OutFilePath,
-                                       bool Aggressive, unsigned* drdPragmaLineNumber)
+                                       bool Aggressive, unsigned* drdPragmaLineNumber, std::unordered_map<std::string, std::string> *macros)
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())),
       Visitor(new OmpDartASTVisitor(CI,drdPragmaLineNumber)),
       FunctionTrackers(Visitor->getFunctionTrackers()),
-      Kernels(Visitor->getTargetRegions()), drdPragmaLineNumber(drdPragmaLineNumber) {
+      Kernels(Visitor->getTargetRegions()), drdPragmaLineNumber(drdPragmaLineNumber), macros(macros) {
   TheRewriter.setSourceMgr(*SM, Context->getLangOpts());
 
   this->OutFilePath = *OutFilePath;
@@ -137,6 +137,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
     llvm::outs() << "Could not create file\n";
   }
   OutFile.close();
+
 
   this->recordReadAndWrite();
 }
