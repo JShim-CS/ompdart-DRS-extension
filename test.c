@@ -11,7 +11,7 @@ int main(int argc,char *argv[]){
   
  
   #pragma drd
-  for (i = 0; i <= len - 1 - 1; i+=1) {
+  for (i = 0; i <= N - 1 - 1; i+=1) {
     if(i%2 == 0){
       a[i + 1] = a[i] + b[i];
     }else{

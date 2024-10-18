@@ -484,6 +484,25 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for (const auto &pair : Visitor->allVars) {
       outfile << pair.first + " = " + "Int(\""+pair.first+"\")\n";
     }
+    for(const auto &pair : *macros){
+      //std::string rawInt = pair.second;
+      //std::string rawMacro = pair.first;
+      //rawMacro.erase(std::remove_if(rawMacro.begin(), rawMacro.end(), ::isspace), rawMacro.end());
+      //rawInt.erase(std::remove_if(rawInt.begin(), rawInt.end(), ::isspace), rawInt.end());
+      bool continueFirstLoop = false;
+      llvm::outs()<<"IN READ AND WRITE: " << pair.second <<" THE END\n";
+      for(char c : pair.second){
+        if(c < '0' || c > '9'){
+          continueFirstLoop = true;
+          break;
+        }
+      }
+      if(continueFirstLoop)continue;
+      //if code makes past here, then the pragma indeed represents a number
+
+      outfile << pair.first + " = Int(\"" + pair.first + "\")\n";
+      outfile << "solver.add(" + pair.first + " == " + pair.second + ")\n";
+    }
     
     int wr_counter = 0;
     std::vector<std::unique_ptr<std::vector<std::string>>> writeVector;

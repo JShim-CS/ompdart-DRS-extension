@@ -18,9 +18,11 @@ public:
       if (FID == SM->getFileID(MD->getLocation())) {  // Ignore system macros
         std::string key = MacroNameTok.getIdentifierInfo()->getName().str();
         std::string replacement = "";
-        if( MD->getMacroInfo()->getReplacementToken(0).getLiteralData() != NULL){
+        if(MD->getMacroInfo()->getReplacementToken(0).getLiteralData() != NULL){
           replacement = MD->getMacroInfo()->getReplacementToken(0).getLiteralData();
-          llvm::outs() << key <<" DEFINED \n";
+          replacement = replacement.substr(0,replacement.find("\n"));
+          replacement.erase(std::remove_if(replacement.begin(), replacement.end(), ::isspace), replacement.end());
+          //llvm::outs() << key <<" DEFINED \n";
           (*macros)[key] = replacement;
         }
          
