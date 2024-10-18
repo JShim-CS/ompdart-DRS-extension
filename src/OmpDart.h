@@ -11,12 +11,21 @@
 
 class MacroCallback : public PPCallbacks {
 public:
-
+    SourceManager *SM;
     std::unordered_map<std::string, std::string> *macros;
     void MacroDefined(const clang::Token &MacroNameTok, const clang::MacroDirective *MD) override {
-      std::string key = MacroNameTok.getIdentifierInfo()->getName().str();
-      std::string replacement = MD->getMacroInfo()->getReplacementToken(0).getLiteralData();
-      (*macros)[key] = replacement;
+      FileID FID = SM->getMainFileID();
+      if (FID == SM->getFileID(MD->getLocation())) {  // Ignore system macros
+        std::string key = MacroNameTok.getIdentifierInfo()->getName().str();
+        std::string replacement = "";
+        if( MD->getMacroInfo()->getReplacementToken(0).getLiteralData() != NULL){
+          replacement = MD->getMacroInfo()->getReplacementToken(0).getLiteralData();
+          llvm::outs() << key <<" DEFINED \n";
+          (*macros)[key] = replacement;
+        }
+         
+      }
+      
     }
 };
 
@@ -48,6 +57,7 @@ protected:
                                                  llvm::StringRef) override {
     Preprocessor &PP = CI.getPreprocessor();
     PP.AddPragmaHandler(ptr.get());
+    this->mcbPtr->SM = &(CI.getSourceManager());
     PP.addPPCallbacks(std::move(this->mcbPtr));
 
     return std::make_unique<OmpDartASTConsumer>(&CI, &OutFilePath, Aggressive, this->ptr->lineNumber, &macros);

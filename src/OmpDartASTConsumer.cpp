@@ -140,6 +140,10 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 
 
   this->recordReadAndWrite();
+  
+  //llvm::outs() << "[" << macros << "]" <<"\n";
+  
+  
 }
 
 std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &indexV){
