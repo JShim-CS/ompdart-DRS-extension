@@ -264,20 +264,20 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &ind
     switch(code){
       case 1:
         if(increment){
-          return "( XXX  >= " + std::to_string(b1) + ") && "
-              + "( XXX "+ bound2 + ")";
+          return "( XXX  >= " + std::to_string(b1) + ")"; /* && "
+              + "( XXX "+ bound2 + ")";*/
         }else{
-          return "( XXX  <= " + std::to_string(b1) + ") && "
-              + "( XXX " + bound2 + ")";
+          return "( XXX  <= " + std::to_string(b1) + ")"; /*&& "
+              + "( XXX " + bound2 + ")";*/
         }
 
       case 2:
         if(increment){
-          return "( XXX  >= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + " XXX )";
+          return "( XXX  >= " + std::to_string(b1) + ")"; /*&& "
+              + "(" + bound2 + " XXX )";*/
         }else{
-          return "( XXX <= " + std::to_string(b1) + ") && "
-              + "(" + bound2 + " XXX )";
+          return "( XXX <= " + std::to_string(b1) + ")"; /*&& "
+              + "(" + bound2 + " XXX )";*/
         }
         
     }
@@ -465,6 +465,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   llvm::outs() << "ADDITIONAL VARS:\n";
   for (const auto &pair : Visitor->allVars) {
     llvm::outs() << pair.first <<"\n";
+
   }
 
   llvm::outs()<< "WRITES:\n";

@@ -58,8 +58,12 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
   
   if (!VD->getLocation().isValid() || !SM->isInMainFile(VD->getLocation()))
     return true;
-    
-  this->allVars[VD->getNameAsString()];
+  
+  std::string tempS = VD->getNameAsString();
+  std::replace(tempS.begin(), tempS.end(), '.', '_');
+  std::replace(tempS.begin(), tempS.end(), ' ', '_');
+  if(tempS == "class")tempS = "_class";
+  this->allVars[tempS];
   if (inLastTargetRegion(VD->getLocation())) {
     LastKernel->recordPrivate(VD);
     return true;
@@ -132,7 +136,11 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
 
   const DeclRefExpr *DRE = getLeftmostDecl(BO);
   const ValueDecl *VD = DRE->getDecl();
-  this->allVars[VD->getNameAsString()] = true;
+  std::string tempS = VD->getNameAsString();
+  std::replace(tempS.begin(), tempS.end(), '.', '_');
+  std::replace(tempS.begin(), tempS.end(), ' ', '_');
+  if(tempS == "class")tempS = "_class";
+  this->allVars[tempS];
   uint8_t AccessType;
   // Check to see if this value is read from the right hand side.
   if (BO->isCompoundAssignmentOp() || usedInStmt(BO->getRHS(), VD)) {
