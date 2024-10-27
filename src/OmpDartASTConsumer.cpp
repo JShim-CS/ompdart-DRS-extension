@@ -19,6 +19,7 @@
 #include<iostream>
 #include<fstream>
 #include <memory>
+#include <regex>
 
 
 
@@ -394,14 +395,16 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                 //if-regions only show parental hierarchy if 1. nested or 2. if-elseif-else
                 if(const IfStmt* ifs = dyn_cast<IfStmt>(stmt)){
                   if(ifs == mostRecentControlRegion && !loopCounter){//this includes when in if()a=20; format
-                    requiredCondition += "(" +this->recursivelySetTheString(ifs->getCond(),&v,indexV) +")";
+                    std::string tempS = this->recursivelySetTheString(ifs->getCond(),&v,indexV);
+                    tempS = tempS.find('[') == std::string::npos ? tempS : "DRD_RANDOM_VAR";
+                    requiredCondition += "(" +tempS +")";
                     loopCounter++;
                   }else if(ifs->getElse() == mostRecentControlRegion){ 
                     if(requiredCondition != ""){
                       requiredCondition += " AND ";
                     }
                     std::string tempCond = this->recursivelySetTheString(ifs->getCond(),&v,indexV);
-                    
+                    tempCond = tempCond.find('[') == std::string::npos ? tempCond : "DRD_RANDOM_VAR";
                     if(tempCond.find("<=") != std::string::npos){
                       tempCond.replace(tempCond.find("<="),2,">");
                     }else if(tempCond.find(">=") != std::string::npos){
@@ -487,6 +490,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for (const auto &pair : Visitor->allVars) {
       outfile << pair.first + " = " + "Int(\""+pair.first+"\")\n";
     }
+    outfile<< "DRD_RANDOM_VAR = Int(\"DRD_RANDOM_VAR\")\n";
     for(const auto &pair : *macros){
       //std::string rawInt = pair.second;
       //std::string rawMacro = pair.first;
@@ -541,6 +545,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
       }
 
+      //arrName = arrName.find('[') == std::string::npos ? arrName : "DRD_RANDOM_VAR";
+      //arrIndex = arrIndex.find('[') == std::string::npos ? arrIndex : "DRD_RANDOM_VAR";
+      //loopVariable = loopVariable.find('[') == std::string::npos ? loopVariable : "DRD_RANDOM_VAR";
+      //condition = condition.find('[') == std::string::npos ? condition : "DRD_RANDOM_VAR";
+
       llvm::outs()<<"Array Name : " << arrName <<"\n";
       llvm::outs()<<"Array Index : " << arrIndex <<"\n";
       llvm::outs()<<"Loop Var : " << loopVariable <<"\n";
@@ -549,6 +558,13 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       //std::replace(arrIndex.begin(), arrIndex.end(), '(', ' ');
       //std::replace(arrIndex.begin(), arrIndex.end(), ')', ' ');
       //arrIndex.erase(std::remove_if(arrIndex.begin(), arrIndex.end(), ::isspace), arrIndex.end());
+
+      if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
+         && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
+         && condition.find("==") == std::string::npos){
+          condition = condition +"!= 0";
+      }
+
       outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
       outfile << "wr_arr_index_" + std::to_string(wr_counter) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter) +"\")\n";
       std::string processedLoopPredicate = predicate_string[0];
@@ -687,6 +703,16 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         condition = "True";
       }
 
+      //if runtime value that cannot be computed, then mark as true
+      condition = condition.find('[') == std::string::npos ? condition : "True";
+      
+      if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
+         && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
+         && condition.find("==") == std::string::npos){
+          condition = condition +"!= 0";
+      }/*else if(condition.find("==") == std::string::npos && condition.find("=") != std::string::npos){
+        
+      }*/
       outfile << "r_cond_"+ std::to_string(r_counter) 
                 + " = And ("+ "r_arr_index_" + std::to_string(r_counter)
                + " == " + arrIndex +", " + processedLoopPredicate +", " + condition + ")\n";
@@ -848,6 +874,8 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const st
     std::string op = binOp->getOpcodeStr().str();
     //llvm::outs() << "\nOOOPPPS: " << op <<"\n";
     std::string realCondition = controlCondition;
+    //if the value cannot be determined, then mark it as true
+    realCondition = realCondition.find('[') == std::string::npos ? realCondition : "True";
     //assume that the code is well-formatted
     if(controlCondition.find(" = ") != std::string::npos){ //control statement has assignment op as well
       //for over-approximation we set all assignment in the control statement predicate as true
@@ -865,6 +893,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const st
       bool invalid; //is this even needed??
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
+      wr = wr.find('[') == std::string::npos ? wr : "DRD_RANDOM_VAR";
       if(op == "="){
         this->writeMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
       }else{
