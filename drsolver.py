@@ -13,7 +13,7 @@ rowstr = Int("rowstr")
 DRD_RANDOM_VAR = Int("DRD_RANDOM_VAR")
 i_drdVar_15 = Int("i_drdVar_15")
 wr_arr_index_0 = Int("wr_arr_index_0")
-wr_cond_0 = And (wr_arr_index_0 == (j), ( i_drdVar_15  >= 0) , ( i_drdVar_15 < size), != 0)
+wr_cond_0 = And (wr_arr_index_0 == (j), ( i_drdVar_15  >= 0) , ( i_drdVar_15 < size), True)
 waws = False
 
 i_drdVar_16 = Int("i_drdVar_16")
