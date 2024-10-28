@@ -22,9 +22,10 @@ int dummyMethod4();
 int main(){
   int var[N];
 dummyMethod3();
+int i;
 #pragma omp parallel for private(i)
 //#pragma rose_outline
-  for(int i=0; i<N; i++){
+  for(i=0; i<N; i++){
     var[i]=0;
   }
 dummyMethod4();

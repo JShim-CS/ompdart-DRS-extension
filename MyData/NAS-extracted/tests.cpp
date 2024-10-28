@@ -121,12 +121,12 @@ void GPTO1_WAR4(){
 
 int main(int argc, char *argv[]){
     //NAS_cg();
-    //loop();
+    //GPTO1_WAW1();
     //GPTO1_WAR1();
     //GPTO1_WARCNTRL1(10);
-    //GPTO1_WARCNTRL2(1);
+    GPTO1_WARCNTRL2(1);
     //GPTO1_WAR2();
     //GPTO1_WAR3();
-    GPTO1_WAR4();
+    //GPTO1_WAR4();
     return 0;
 }

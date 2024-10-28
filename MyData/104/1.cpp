@@ -96,7 +96,7 @@ int main(int argc,char *argv[])
   int _ret_val_0;
   dummyMethod1();
   
-#pragma omp parallel for private (i)
+//#pragma omp parallel for private (i)
 //#pragma rose_outline
   for (i = 0; i <= len - 1; i += 1) {
     a[i] = i;

@@ -78,8 +78,9 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
 /*
-A loop with loop-carried anti-dependence.
-Data race pair: a[i+1]@64:10 vs. a[i]@64:5
+This one has data races due to true dependence.
+But data races happen at instruction level, not thread level. 
+Data race pair: a[i+1]@66:5 vs. a[i]@66:12
 */
 #include <stdio.h>
 #include <omp.h> 
@@ -91,25 +92,31 @@ int dummyMethod4();
 int main(int argc,char *argv[])
 {
   int i;
-  int len = 1000;
-  int a[1000];
+  int len = 100;
+  int a[100];
+  int b[100];
   int _ret_val_0;
   dummyMethod1();
   
-#pragma omp parallel for private (i)
+//#pragma omp parallel for private (i)
 //#pragma rose_outline
   for (i = 0; i <= len - 1; i += 1) {
     a[i] = i;
+    b[i] = i + 1;
   }
   dummyMethod2();
   dummyMethod3();
-  #pragma omp parallel for private(i) shared(a,len) //manually added to check with thread_sanitizer
+  #pragma omp parallel for private(i) shared(a,b) //manually added to check with thread_sanitizer
   #pragma drd
   for (i = 0; i <= len - 1 - 1; i += 1) {
-    a[i] = a[i + 1] + 1;
+    a[i + 1] = a[i] + b[i];
   }
   dummyMethod4();
-  printf("a[500]=%d\n",a[500]);
+  dummyMethod3();
+  for (i = 0; i <= len - 1; i += 1) {
+    printf("i=%d a[%d]=%d\n",i,i,a[i]);
+  }
+  dummyMethod4();
   _ret_val_0 = 0;
   return _ret_val_0;
 }
