@@ -34,6 +34,17 @@ void GPTO1_WAR1(){
     }
 }
 
+void GPTO1_WAR2(){
+     int size = 100;
+    int array[size];
+
+    #pragma omp parallel for
+    //#pragma drd
+    for (int i = 0; i < size - 1; i++) {
+        array[i + 1] = array[i] + 1;
+    }
+}
+
 void GPTO1_WARCNTRL1(int threshold){
     int size = 100;
     int array[size];
@@ -65,7 +76,7 @@ void GPTO1_WARCNTRL2(int flag){
     }
 
     #pragma omp parallel for
-    #pragma drd
+    //#pragma drd
     for (int i = 0; i < size; i++) {
         if (flag) {
             array[i] = array[0];
@@ -75,6 +86,23 @@ void GPTO1_WARCNTRL2(int flag){
     }
 }
 
+void GPTO1_WAR3(){
+    int size = 100;
+    int array[size];
+    array[0] = 0;
+
+    #pragma omp parallel for
+    #pragma drd
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            array[j] = array[i] + j;
+        }
+    }
+
+}
+
+
+
 
 
 int main(int argc, char *argv[]){
@@ -82,5 +110,8 @@ int main(int argc, char *argv[]){
     //loop();
     //GPTO1_WAR1();
     //GPTO1_WARCNTRL1(10);
+    //GPTO1_WARCNTRL2(1);
+    //GPTO1_WAR2();
+    GPTO1_WAR3();
     return 0;
 }

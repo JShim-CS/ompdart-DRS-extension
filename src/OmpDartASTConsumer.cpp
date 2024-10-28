@@ -559,9 +559,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       //std::replace(arrIndex.begin(), arrIndex.end(), ')', ' ');
       //arrIndex.erase(std::remove_if(arrIndex.begin(), arrIndex.end(), ::isspace), arrIndex.end());
 
+      condition.erase(std::remove_if(condition.begin(), condition.end(), ::isspace), condition.end());
       if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
          && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
-         && condition.find("==") == std::string::npos){
+         && condition.find("==") == std::string::npos && condition != ""){
           condition = condition +"!= 0";
       }
 
@@ -705,10 +706,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       //if runtime value that cannot be computed, then mark as true
       condition = condition.find('[') == std::string::npos ? condition : "True";
-      
+      condition.erase(std::remove_if(condition.begin(), condition.end(), ::isspace), condition.end());
       if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
          && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
-         && condition.find("==") == std::string::npos){
+         && condition.find("==") == std::string::npos && condition != ""){
           condition = condition +"!= 0";
       }/*else if(condition.find("==") == std::string::npos && condition.find("=") != std::string::npos){
         
