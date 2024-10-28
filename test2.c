@@ -90,15 +90,29 @@ void GPTO1_WAR3(){
     int size = 100;
     int array[size];
     array[0] = 0;
-
+    //j's range is not specified in the algo. update it
     #pragma omp parallel for
-    #pragma drd
+    //#pragma drd
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             array[j] = array[i] + j;
         }
     }
+}
 
+void GPTO1_WAR4(){
+    int size = 100;
+    int array[size];
+    array[0] = 0;
+    int threshold = 10;
+    #pragma omp parallel for
+    #pragma drd
+    for (int i = 0; i < size; i++) {
+        if (array[i] > threshold) {
+            //-= causes bug
+            array[i % 2] = array[i%2] - array[i];
+        }
+    }
 }
 
 

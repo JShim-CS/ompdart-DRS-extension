@@ -562,7 +562,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       condition.erase(std::remove_if(condition.begin(), condition.end(), ::isspace), condition.end());
       if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
          && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
-         && condition.find("==") == std::string::npos && condition != ""){
+         && condition.find("==") == std::string::npos && condition != "" && condition != "True" && condition != "False"){
           condition = condition +"!= 0";
       }
 
@@ -709,7 +709,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       condition.erase(std::remove_if(condition.begin(), condition.end(), ::isspace), condition.end());
       if(condition.find("<=") == std::string::npos && condition.find(">=") == std::string::npos
          && condition.find("<") == std::string::npos && condition.find(">") == std::string::npos 
-         && condition.find("==") == std::string::npos && condition != ""){
+         && condition.find("==") == std::string::npos && condition != "" && condition != "True" && condition != "False"){
           condition = condition +"!= 0";
       }/*else if(condition.find("==") == std::string::npos && condition.find("=") != std::string::npos){
         
