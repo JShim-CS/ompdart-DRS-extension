@@ -1,131 +1,93 @@
-#include<omp.h>
+/*
+Copyright (c) 2017, Lawrence Livermore National Security, LLC.
+Produced at the Lawrence Livermore National Laboratory
+Written by Chunhua Liao, Pei-Hung Lin, Joshua Asplund,
+Markus Schordan, and Ian Karlin
+(email: liao6@llnl.gov, lin32@llnl.gov, asplund1@llnl.gov,
+schordan1@llnl.gov, karlin1@llnl.gov)
+LLNL-CODE-732144
+All rights reserved.
 
-void NAS_cg(){
-    int rowstr[100];
-    int j;
-    int nrows = 100;
-    #pragma omp parallel for
-    //#pragma drd
-    for (j = nrows; j >= 1; j--) {
-	    rowstr[j+1] = rowstr[j];
-    }
+This file is part of DataRaceBench. For details, see
+https://github.com/LLNL/dataracebench. Please also see the LICENSE file
+for our additional BSD notice.
+
+Redistribution and use in source and binary forms, with
+or without modification, are permitted provided that the following
+conditions are met:
+
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the disclaimer below.
+
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the disclaimer (as noted below)
+  in the documentation and/or other materials provided with the
+  distribution.
+
+* Neither the name of the LLNS/LLNL nor the names of its contributors
+  may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL
+SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+*/
+/* 
+This one has data races due to true dependence. 
+But data races happen at both instruction and thread level. 
+Data race pair: a[i+1]@66:5 vs. a[i]@66:12
+*/
+#include <stdio.h>
+int dummyMethod1();
+int dummyMethod2();
+int dummyMethod3();
+int dummyMethod4();
+int main(int argc, char* argv[])
+{
+  int i;
+  int len=100;
+  int a[100], b[100];
+
+			dummyMethod3();
+      #pragma omp parallel for private(i)
+//#pragma rose_outline
+  for (i=0;i<len;i++)
+  {
+    a[i]=i;
+    b[i]=i+1;
+  }
+			dummyMethod4();
+
+			dummyMethod1();
+  #pragma omp parallel for private(i)
+  #pragma drd
+  for (i=0;i<len-1;i++)
+    a[i+1]=a[i]+b[i];
+			dummyMethod2();
+
+  printf("a[50]=%d\n",a[50]);
+  return 0;
 }
-
-//false negative on WAW
-void GPTO1_WAW1() {
-    int size = 100;
-    int array[size];
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size; i++) {
-        array[0] = i;
-    }
+int dummyMethod1(){
+    return 0;
 }
-
-void GPTO1_WAR1(){
-    int size = 100;
-    int array[size];
-    array[0] = 0;
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size; i++) {
-        //array[0] += array[i]; //doesn't work for drd 
-        array[0] = array[0] + array[i];
-    }
+int dummyMethod2(){
+    return 0;
 }
-
-void GPTO1_WAR2(){
-     int size = 100;
-    int array[size];
-
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size - 1; i++) {
-        array[i + 1] = array[i] + 1;
-    }
+int dummyMethod3(){
+    return 0;
 }
-
-void GPTO1_WARCNTRL1(int threshold){
-    int size = 100;
-    int array[size];
-    array[0] = 0;
-
-    //preprocessing for Tsan, this part was not written by GPT
-    for(int i = 0; i < size; i++){
-        array[i] = 30;
-    }
-    
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size; i++) {
-        if (array[i] > threshold) {
-            array[0] = array[i];
-        }
-    }
-
-}
-
-void GPTO1_WARCNTRL2(int flag){
-    int size = 100;
-    int array[size];
-    array[0] = 0;
-
-    //preprocessing for Tsan, this part was not written by GPT
-    for(int i = 0; i < size; i++){
-        array[i] = 30;
-    }
-
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size; i++) {
-        if (flag) {
-            array[i] = array[0];
-        } else {
-            array[0] = array[i];
-        }
-    }
-}
-
-void GPTO1_WAR3(){
-    int size = 100;
-    int array[size];
-    array[0] = 0;
-    //j's range is not specified in the algo. update it
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            array[j] = array[i] + j;
-        }
-    }
-}
-
-void GPTO1_WAR4(){
-    int size = 100;
-    int array[size];
-    array[0] = 0;
-    int threshold = 10;
-    #pragma omp parallel for
-    #pragma drd
-    for (int i = 0; i < size; i++) {
-        if (array[i] > threshold) {
-            //-= causes bug
-            array[i % 2] = array[i%2] - array[i];
-        }
-    }
-}
-
-
-
-
-
-int main(int argc, char *argv[]){
-    //NAS_cg();
-    //loop();
-    //GPTO1_WAR1();
-    //GPTO1_WARCNTRL1(10);
-    //GPTO1_WARCNTRL2(1);
-    //GPTO1_WAR2();
-    GPTO1_WAR3();
+int dummyMethod4(){
     return 0;
 }

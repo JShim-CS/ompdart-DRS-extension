@@ -7,21 +7,27 @@ Markus Schordan, and Ian Karlin
 schordan1@llnl.gov, karlin1@llnl.gov)
 LLNL-CODE-732144
 All rights reserved.
+
 This file is part of DataRaceBench. For details, see
 https://github.com/LLNL/dataracebench. Please also see the LICENSE file
 for our additional BSD notice.
+
 Redistribution and use in source and binary forms, with
 or without modification, are permitted provided that the following
 conditions are met:
+
 * Redistributions of source code must retain the above copyright
   notice, this list of conditions and the disclaimer below.
+
 * Redistributions in binary form must reproduce the above copyright
   notice, this list of conditions and the disclaimer (as noted below)
   in the documentation and/or other materials provided with the
   distribution.
+
 * Neither the name of the LLNS/LLNL nor the names of its contributors
   may be used to endorse or promote products derived from this
   software without specific prior written permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -38,66 +44,50 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
 /* 
-The -- operation on numNodes2 is not protected, causing data race.
-Data race pair: numNodes2@74:7 vs. numNodes2@74:7
+This one has data races due to true dependence. 
+But data races happen at both instruction and thread level. 
+Data race pair: a[i+1]@66:5 vs. a[i]@66:12
 */
-#include <stdlib.h>  
 #include <stdio.h>
-#include <omp.h> 
 int dummyMethod1();
 int dummyMethod2();
 int dummyMethod3();
 int dummyMethod4();
-
-int main(int argc,char *argv[])
+int main(int argc, char* argv[])
 {
   int i;
-  int len = 100;
-  int numNodes = len;
-  int numNodes2 = 0;
-  int x[100];
-// initialize x[]
-  dummyMethod3();
-  
-#pragma omp parallel for private (i) firstprivate (len)
+  int len=100;
+  int a[100], b[100];
+
+			dummyMethod3();
+      #pragma omp parallel for private(i)
 //#pragma rose_outline
-  for (i = 0; i <= len - 1; i += 1) {
-    if (i % 2 == 0) 
-      x[i] = 5;
-     else 
-      x[i] = - 5;
+  for (i=0;i<len;i++)
+  {
+    a[i]=i;
+    b[i]=i+1;
   }
-  dummyMethod4();
-  dummyMethod1();
-  
-#pragma omp parallel for private (i) reduction (-:numNodes2)
-//#pragma rose_outline
-  for (i = numNodes - 1; i >= 0; i += -1) {
-    if (x[i] <= 0) {
-      numNodes2--;
-    }
-  }
-  dummyMethod2();
-  printf("numNodes2 = %d\n",numNodes2);
+			dummyMethod4();
+
+			dummyMethod1();
+  #pragma omp parallel for private(i)
+  #pragma drd
+  for (i=0;i<len-1;i++)
+    a[i+1]=a[i]+b[i];
+			dummyMethod2();
+
+  printf("a[50]=%d\n",a[50]);
   return 0;
 }
-
-int dummyMethod1()
-{
-  return 0;
+int dummyMethod1(){
+    return 0;
 }
-
-int dummyMethod2()
-{
-  return 0;
+int dummyMethod2(){
+    return 0;
 }
-
-int dummyMethod3()
-{
-  return 0;
+int dummyMethod3(){
+    return 0;
 }
-
-int dummyMethod4()
-{
-  return 0;
+int dummyMethod4(){
+    return 0;
 }

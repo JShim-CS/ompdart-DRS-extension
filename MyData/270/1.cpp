@@ -37,42 +37,38 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
-/* Data race on outLen due to ++ operation.
-Adding private (outLen) can avoid race condition. But it is wrong semantically.
-Data races on outLen also cause output[outLen++] to have data races.
-Data race pairs (we allow two pairs to preserve the original code pattern):
-1. outLen@72 vs. outLen@72
-2. output[]@72 vs. output[]@72
+/*
+A loop with loop-carried anti-dependence.
+Data race pair: a[i+1]@64:10 vs. a[i]@64:5
 */
-#include <stdlib.h>
 #include <stdio.h>
 #include <omp.h> 
 int dummyMethod1();
 int dummyMethod2();
 int dummyMethod3();
 int dummyMethod4();
-int input[1000];
-int output[1000];
 
-int main()
+int main(int argc,char *argv[])
 {
   int i;
-  int inLen = 1000;
-  int outLen = 0;
+  int len = 1000;
+  int a[1000];
   dummyMethod3();
   
-#pragma omp parallel for private (i)
-//#pragma rose_outline
-  for (i = 0; i <= inLen - 1; i += 1) {
-    input[i] = i;
-  }
+// #pragma omp parallel for private (i)
+// //#pragma rose_outline
+//   for (i = 0; i <= len - 1; i += 1) {
+//     a[i] = i;
+//   }
   dummyMethod4();
   dummyMethod1();
-  for (i = 0; i <= inLen - 1; i += 1) {
-    output[outLen++] = input[i];
+  #pragma omp parallel for private(i)
+  #pragma drd
+  for (i = 0; i <= len - 1 - 1; i += 1) {
+    a[i] = a[i + 1] + 1;
   }
   dummyMethod2();
-  printf("output[500]=%d\n",output[500]);
+  printf("a[500]=%d\n",a[500]);
   return 0;
 }
 

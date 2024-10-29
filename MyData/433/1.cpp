@@ -9,14 +9,18 @@ int dummyMethod4();
 
 int main()
 {
-  int A[20][20];
+  int A[20][20][20];
   dummyMethod1();
   
-#pragma omp parallel for private (j)
-//#pragma rose_outline
   for (int i = 1; i <= 19; i += 1) {
     for (int j = 1; j <= 19; j += 1) {
-      A[i][j] = A[i][j - 1];
+      
+#pragma omp parallel for
+//#pragma rose_outline
+      #pragma drd
+      for (int k = 1; k <= 19; k += 1) {
+        A[i][j][k] = A[i][j - 1][k];
+      }
     }
   }
 }

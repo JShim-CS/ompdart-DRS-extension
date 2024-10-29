@@ -37,10 +37,11 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
-/*
-A loop with loop-carried anti-dependence.
-Data race pair: a[i+1]@64:10 vs. a[i]@64:5
+/* 
+A linear expression is used as array subscription.
+Data race pair: a[2*i+1]@64:5 vs. a[i]@64:14
 */
+#include <stdlib.h>
 #include <stdio.h>
 #include <omp.h> 
 int dummyMethod1();
@@ -51,22 +52,23 @@ int dummyMethod4();
 int main(int argc,char *argv[])
 {
   int i;
-  int len = 1000;
-  int a[1000];
+  int a[2000];
   dummyMethod3();
   
 #pragma omp parallel for private (i)
 //#pragma rose_outline
-  for (i = 0; i <= len - 1; i += 1) {
+  for (i = 0; i <= 1999; i += 1) {
     a[i] = i;
   }
   dummyMethod4();
   dummyMethod1();
-  for (i = 0; i <= len - 1 - 1; i += 1) {
-    a[i] = a[i + 1] + 1;
+  #pragma omp parallel for private(i)
+  #pragma drd
+  for (i = 0; i <= 999; i += 1) {
+    a[2 * i + 1] = a[i] + 1;
   }
   dummyMethod2();
-  printf("a[500]=%d\n",a[500]);
+  printf("a[1001]=%d\n",a[1001]);
   return 0;
 }
 

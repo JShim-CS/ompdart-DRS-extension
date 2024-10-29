@@ -69,6 +69,8 @@ int main(int argc, char* argv[])
 			dummyMethod4();
 
 			dummyMethod1();
+  #pragma omp parallel for private(i,j)
+  #pragma drd
   for (i=1;i<n;i++)
     for (j=1;j<m;j++)
       b[i][j]=b[i-1][j-1];

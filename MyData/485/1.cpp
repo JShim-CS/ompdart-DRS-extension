@@ -7,21 +7,27 @@ Markus Schordan, and Ian Karlin
 schordan1@llnl.gov, karlin1@llnl.gov)
 LLNL-CODE-732144
 All rights reserved.
+
 This file is part of DataRaceBench. For details, see
 https://github.com/LLNL/dataracebench. Please also see the LICENSE file
 for our additional BSD notice.
+
 Redistribution and use in source and binary forms, with
 or without modification, are permitted provided that the following
 conditions are met:
+
 * Redistributions of source code must retain the above copyright
   notice, this list of conditions and the disclaimer below.
+
 * Redistributions in binary form must reproduce the above copyright
   notice, this list of conditions and the disclaimer (as noted below)
   in the documentation and/or other materials provided with the
   distribution.
+
 * Neither the name of the LLNS/LLNL nor the names of its contributors
   may be used to endorse or promote products derived from this
   software without specific prior written permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -37,55 +43,49 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
-/* 
-A linear expression is used as array subscription.
-Data race pair: a[2*i+1]@64:5 vs. a[i]@64:14
+
+/*
+A loop with loop-carried anti-dependence.
+Data race pair: a[i+1]@64:10 vs. a[i]@64:5
 */
-#include <stdlib.h>
 #include <stdio.h>
-#include <omp.h> 
 int dummyMethod1();
 int dummyMethod2();
 int dummyMethod3();
 int dummyMethod4();
-
-int main(int argc,char *argv[])
-{
+int main(int argc, char* argv[])
+{   
   int i;
-  int a[2000];
-  dummyMethod3();
-  
-#pragma omp parallel for private (i)
+  int len = 1000;
+
+  int a[1000];
+
+			dummyMethod3();
+      #pragma omp parallel for private(i)
 //#pragma rose_outline
-  for (i = 0; i <= 1999; i += 1) {
-    a[i] = i;
-  }
-  dummyMethod4();
-  dummyMethod1();
-  for (i = 0; i <= 999; i += 1) {
-    a[2 * i + 1] = a[i] + 1;
-  }
-  dummyMethod2();
-  printf("a[1001]=%d\n",a[1001]);
+  for (i=0; i<len; i++)
+    a[i]= i; 
+			dummyMethod4();
+
+			dummyMethod1();
+  #pragma omp parallel for private(i)
+  #pragma drd
+  for (i=0;i< len -1 ;i++)
+    a[i]=a[i+1]+1;
+			dummyMethod2();
+
+  printf ("a[500]=%d\n", a[500] );
   return 0;
 }
-
-int dummyMethod1()
-{
-  return 0;
+int dummyMethod1(){
+    return 0;
 }
-
-int dummyMethod2()
-{
-  return 0;
+int dummyMethod2(){
+    return 0;
 }
-
-int dummyMethod3()
-{
-  return 0;
+int dummyMethod3(){
+    return 0;
 }
-
-int dummyMethod4()
-{
-  return 0;
+int dummyMethod4(){
+    return 0;
 }
