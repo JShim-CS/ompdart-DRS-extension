@@ -147,7 +147,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   
 }
 
-std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &indexV){
+std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::unordered_map<std::string, bool> &indexV){
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();
@@ -251,10 +251,10 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string &ind
       }
     }else{ //does not involve an inequality
       bound2 = bound2.substr(0,bound2.find(';'));
-      indexV = indexVar + "";
+      indexV[indexVar + ""] = true;
       return bound2;
     }
-    indexV = indexVar + "";
+    indexV[indexVar + ""] = true;
     llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
     std::string tempIndexVar;
     for(char c : indexVar){
@@ -319,7 +319,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
     bool stillSearching = true;
-    std::string indexV = "";
+    std::unordered_map<std::string, bool> indexV;
     int v = -1;
     std::stack<std::vector<std::string>> chainOfPredicates;
     const Stmt* mostRecentControlRegion;
@@ -365,7 +365,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           std::string exp = sr.str();
           exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
           
-          if(exp == indexV)continue;
+          //exp == indexV --> No need to track already tracked loop index variable
+          if(indexV.find(exp) != indexV.end())continue;
 
 
           const Expr *cond = NULL; //(dyn_cast<IfStmt>(a.S))->getCond();
@@ -449,7 +450,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               arrRange = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
               sr = Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
               llvm::outs() << "array name is: " << sr.str() <<" ";
-              //It is easier to get the array index from the source text
+              
             }
             llvm::outs() << "\n";
            
@@ -462,7 +463,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
     if(!stillSearching){
       llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
-      llvm::outs() << "indexVAR: " << indexV << "\n";
+      //llvm::outs() << "indexVAR: " << indexV << "\n";
     }
     
   }
@@ -785,11 +786,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
 }
 
-std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int *v,  const std::string &indexV){
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int *v,  std::unordered_map<std::string, bool> &indexV){
   return this->recursivelySetTheString(exp,v, indexV);
 }
 
-std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v, const std::string &indexV){
+std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v, std::unordered_map<std::string, bool> &indexV){
   if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
@@ -830,7 +831,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
 
 }
 
-std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *v,  const std::string &indexV){
+std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *v,  std::unordered_map<std::string, bool> &indexV){
   //what is exp is another binOp??
   if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
     const Expr *base = arrayExpr->getBase();
@@ -870,7 +871,7 @@ std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *
 
 
 //we need to update this method to support multiple arrays
-void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition, bool isWrite){
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, bool> &indexV, const std::string controlCondition, bool isWrite){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     //llvm::outs() << "\nOOOPPPS: " << op <<"\n";

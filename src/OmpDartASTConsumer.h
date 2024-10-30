@@ -37,12 +37,12 @@ public:
 
 private:
   CompilerInstance *CI;
-  std::string getConditionOfLoop(ForStmt &FS, std::string &indexV);
+  std::string getConditionOfLoop(ForStmt &FS, std::unordered_map<std::string, bool> &indexV);
   void recordReadAndWrite();
-  std::string setStringForRegion(const Expr *exp, int *v, const std::string &indexV);
-  std::string recursivelySetTheString(const Expr *exp, int *v, const std::string &indexV);
-  void setArrayIndexEncoding(const Stmt *exp, int *v, const std::string &indexV, const std::string controlCondition, bool isWrite);
-  std::string recursivelyFindArrayIndex(const Expr *exp, int *v, const std::string &indexV);
+  std::string setStringForRegion(const Expr *exp, int *v, std::unordered_map<std::string, bool> &indexV);
+  std::string recursivelySetTheString(const Expr *exp, int *v, std::unordered_map<std::string, bool> &indexV);
+  void setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, bool> &indexV, const std::string controlCondition, bool isWrite);
+  std::string recursivelyFindArrayIndex(const Expr *exp, int *v, std::unordered_map<std::string, bool> &indexV);
 }; // end class OmpDartASTConsumer
 
 #endif
