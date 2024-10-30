@@ -803,7 +803,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
 
     std::string val = decl->getNameAsString();
     val.erase(std::remove_if(val.begin(), val.end(), ::isspace), val.end());
-    if(val == indexV){
+    if(indexV.find(val) != indexV.end()){
       return val + "_drdVar_" + std::to_string(*v);
     }else{
       return val;
