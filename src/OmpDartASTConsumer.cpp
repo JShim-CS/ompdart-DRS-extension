@@ -250,9 +250,11 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string inde
       }
     }else{ //does not involve an inequality
       bound2 = bound2.substr(0,bound2.find(';'));
+      indexVar.erase(std::remove_if(indexVar.begin(), indexVar.end(), ::isspace), indexVar.end());
       indexV[indexVar + ""] = true;
       return bound2;
     }
+    indexVar.erase(std::remove_if(indexVar.begin(), indexVar.end(), ::isspace), indexVar.end());
     indexV[indexVar + ""] = true;
     // llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
     // std::string tempIndexVar;
@@ -266,18 +268,22 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string inde
     switch(code){
       case 1:
         if(increment){
+          
           return "( XXX  >= " + bb1 + ") && "
               + "( XXX "+ bound2 + ")";
         }else{
+           
           return "( XXX  <= " + bb1 + ") && "
               + "( XXX " + bound2 + ")";
         }
 
       case 2:
         if(increment){
+          
           return "( XXX  >= " + bb1 + ") && "
               + "(" + bound2 + " XXX )";
         }else{
+          
           return "( XXX <= " + bb1 + ") && "
               + "(" + bound2 + " XXX )";
         }
@@ -329,6 +335,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   //dive into targetFunction to map out the predicates of conditionals
   std::stack<Stmt*> predicates;
   std::vector<std::string> predicate_string;
+  std::unordered_map<std::string, std::string> loopVar2LoopPred;
   //std::stack<std::string> predicateStack;
   
 
@@ -357,6 +364,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         predicate_string.push_back(str);
+        loopVar2LoopPred[loopVar] = str;
         inTheTargetLoopRegion = true;
         continue;
       }
@@ -370,6 +378,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         predicate_string.push_back(str);
+        loopVar2LoopMap[loopVar] = str;
         continue;
       }
 
@@ -623,10 +632,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       outfile << "wr_arr_index_" + std::to_string(wr_counter) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter) +"\")\n";
       for(std::string processedLoopPredicate : predicate_string){
         size_t firstPos = processedLoopPredicate.find("XXX");
-      }
-      std::string processedLoopPredicate = predicate_string[0];
-      if(predicate_string[0] != ""){
-        size_t firstPos = predicate_string[0].find("XXX");
+
+        if(processedLoopPredicate != ""){
         if(firstPos != std::string::npos){
           processedLoopPredicate.replace(firstPos,3,loopVariable);
         }
@@ -642,6 +649,28 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
 
       }
+      
+      
+      }
+      //std::string processedLoopPredicate = predicate_string[0];
+
+      // if(processesdLoopPredicate != ""){
+      //   size_t firstPos = predicate_string[0].find("XXX");
+      //   if(firstPos != std::string::npos){
+      //     processedLoopPredicate.replace(firstPos,3,loopVariable);
+      //   }
+
+      //   firstPos = processedLoopPredicate.find("&&");
+      //   if(firstPos != std::string::npos){
+      //     processedLoopPredicate.replace(firstPos,2,",");
+      //   }
+
+      //   firstPos = processedLoopPredicate.find("XXX");
+      //   if(firstPos != std::string::npos){
+      //     processedLoopPredicate.replace(firstPos,3,loopVariable);
+      //   }
+
+      // }
 
       //quick dirty fix, fix it later
       if(condition == ""){
@@ -932,7 +961,7 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
 
 
 //we need to update this method to support multiple arrays
-void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, bool> &indexV, const std::string controlCondition, bool isWrite){
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, bool> &indexV, const std::string controlCondition, bool isWrite, std::unordered_map<std::string,std::string> &Encoded2Original){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     //llvm::outs() << "\nOOOPPPS: " << op <<"\n";
@@ -961,6 +990,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         //name |index | loopVar | condition
         std::string loopVar = "";
         for(auto lv : indexV){
+          Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
         }
         this->writeMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
@@ -973,12 +1003,12 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       }
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
-        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,true);
+        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,true,Encoded2Original);
       }else{
-        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false);
+        this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
       }
     }else{
-      this->setArrayIndexEncoding(binOp->getLHS(),v,indexV,controlCondition,false);
+      this->setArrayIndexEncoding(binOp->getLHS(),v,indexV,controlCondition,false,Encoded2Original);
     }
 
     *v += 1;
@@ -1000,15 +1030,15 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       this->readMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
       
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
-      this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false);
+      this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
     }else{
-      this->setArrayIndexEncoding(binOp->getRHS(),v,indexV,controlCondition,false);
+      this->setArrayIndexEncoding(binOp->getRHS(),v,indexV,controlCondition,false,Encoded2Original);
     }
     
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
-    this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition,false);
+    this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
-    this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false);
+    this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
 
   }else if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
       int indexPos = 0;
