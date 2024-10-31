@@ -334,8 +334,9 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
   //dive into targetFunction to map out the predicates of conditionals
   std::stack<Stmt*> predicates;
-  std::vector<std::string> predicate_string;
+  //std::vector<std::string> predicate_string;
   std::unordered_map<std::string, std::string> loopVar2LoopPred;
+  std::unordered_map<std::string, std::string> Encoded2Original;
   //std::stack<std::string> predicateStack;
   
 
@@ -363,7 +364,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
-        predicate_string.push_back(str);
+        //predicate_string.push_back(str);
         loopVar2LoopPred[loopVar] = str;
         inTheTargetLoopRegion = true;
         continue;
@@ -377,8 +378,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
-        predicate_string.push_back(str);
-        loopVar2LoopMap[loopVar] = str;
+        //predicate_string.push_back(str);
+        loopVar2LoopPred[loopVar] = str;
         continue;
       }
 
@@ -485,7 +486,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           
           //if(requiredCondition != ""){
             llvm::outs() <<  "(" << exp <<" requires: ";
-            this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition,false);
+            this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition,false,Encoded2Original);
             llvm::outs() << requiredCondition << " ) ";
             if(a.ArraySubscript){
               const Expr *base = a.ArraySubscript->getBase();
@@ -506,7 +507,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     }
 
     if(!stillSearching){
-      llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
+      //llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
       //llvm::outs() << "indexVAR: " << indexV << "\n";
     }
     
@@ -630,11 +631,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       }
       //outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
       outfile << "wr_arr_index_" + std::to_string(wr_counter) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter) +"\")\n";
-      for(std::string processedLoopPredicate : predicate_string){
-        size_t firstPos = processedLoopPredicate.find("XXX");
+      
+      for(auto p : loopVar2LoopPred){
+        std::string 
 
-        if(processedLoopPredicate != ""){
+        size_t firstPos = p.second.find("XXX");
+        
+        if(p.first != ""){
         if(firstPos != std::string::npos){
+
           processedLoopPredicate.replace(firstPos,3,loopVariable);
         }
 
