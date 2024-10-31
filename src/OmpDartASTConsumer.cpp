@@ -147,7 +147,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   
 }
 
-std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::unordered_map<std::string, bool> &indexV){
+std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,bool> &indexV){
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();
@@ -188,8 +188,7 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::unordered_m
       }
 
     }
-    
-    std::string indexVar; 
+     
     std::string bound2 = condstr.str();
     char code = 0;
     bool increment = false;
@@ -255,14 +254,14 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::unordered_m
       return bound2;
     }
     indexV[indexVar + ""] = true;
-    llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
-    std::string tempIndexVar;
-    for(char c : indexVar){
-      if(c != ' '){
-        tempIndexVar += c;
-      }
-    }
-    indexVar = tempIndexVar;
+    // llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
+    // std::string tempIndexVar;
+    // for(char c : indexVar){
+    //   if(c != ' '){
+    //     tempIndexVar += c;
+    //   }
+    // }
+    // indexVar = tempIndexVar;
     std::string bb1 = b1isVar ? bound1 : std::to_string(b1);
     switch(code){
       case 1:
@@ -288,6 +287,26 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::unordered_m
     return "";
   }
 
+std::string OmpDartASTConsumer::getLoopVariable(const ForStmt *fs){
+  const Stmt* init = fs->getInc();
+  std::string ret = "";
+  if(const CompoundAssignOperator *cao = dyn_cast<CompoundAssignOperator>(init)){
+     const Stmt* leftSide = cao->getLHS();
+     if(const DeclRefExpr *dre = dyn_cast<DeclRefExpr>(leftSide)){
+      const ValueDecl *decl = dre->getDecl();
+      ret = decl->getNameAsString();
+      ret.erase(std::remove_if(ret.begin(), ret.end(), ::isspace), ret.end());
+     }
+  }else if(const UnaryOperator *uop = dyn_cast<UnaryOperator>(init)){
+     const Expr *e = uop->getSubExpr();
+     if(const DeclRefExpr *dre = dyn_cast<DeclRefExpr>(e)){
+      const ValueDecl *decl = dre->getDecl();
+      ret = decl->getNameAsString();
+      ret.erase(std::remove_if(ret.begin(), ret.end(), ::isspace), ret.end());
+     }
+  }
+  return ret;
+}
 void OmpDartASTConsumer::recordReadAndWrite(){
   DataTracker *TargetFunction = NULL;
 
@@ -319,6 +338,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
     bool stillSearching = true;
+    bool inTheTargetLoopRegion = false;
     std::unordered_map<std::string, bool> indexV;
     int v = -1;
     std::stack<std::vector<std::string>> chainOfPredicates;
@@ -332,12 +352,27 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
-        std::string str = this->getConditionOfLoop(*fs,indexV);
-        indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
+        std::string loopVar = this->getLoopVariable(fs);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
+        //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
+        str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
+        predicate_string.push_back(str);
+        inTheTargetLoopRegion = true;
+        continue;
+      }
+      
+      if(!stillSearching && a.Barrier == LoopEnd)break;
+
+      if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
+        fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
+        std::string loopVar = this->getLoopVariable(fs);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
+        //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
+        str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         predicate_string.push_back(str);
         continue;
       }
-      if(!stillSearching && a.Barrier == LoopEnd)break;
+
       
       
       if(!stillSearching){
@@ -520,7 +555,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       std::string temp = "";
       std::string arrName = "";
       std::string arrIndex = "";
-      std::string loopVariable = "";
+      std::vector<std::string> loopVariableList;
       std::string condition = "";
       for(char c : info){//process string
         if(c == '|'){
@@ -533,7 +568,21 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             pipeCounter++;
             temp = "";
           }else if(pipeCounter == 2){
-            loopVariable = temp;
+            //loopVariable = temp;
+            //arrName | arrIndex | loopVars | condition
+            std::string individualLoopVar = "";
+            for(char c : temp){
+              if(c == '$'){
+                loopVariableList.push_back(individualLoopVar);
+                individualLoopVar = "";
+              }else{
+                individualLoopVar += c;
+              }
+            }
+            if(individualLoopVar != ""){
+             //add the last remaining loop var
+             loopVariableList.push_back(individualLoopVar); 
+            }
             pipeCounter++;
             temp = "";
           }
@@ -553,7 +602,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       llvm::outs()<<"Array Name : " << arrName <<"\n";
       llvm::outs()<<"Array Index : " << arrIndex <<"\n";
-      llvm::outs()<<"Loop Var : " << loopVariable <<"\n";
+      //llvm::outs()<<"Loop Var : " << loopVariable <<"\n";
       llvm::outs()<<"Condition : " << condition <<"\n";
 
       //std::replace(arrIndex.begin(), arrIndex.end(), '(', ' ');
@@ -567,8 +616,14 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           condition = condition +"!= 0";
       }
 
-      outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
+      for(std::string ilv : loopVariableList){
+        outfile << ilv + " = Int(\"" + ilv +"\")\n";
+      }
+      //outfile << loopVariable + " = Int(\"" + loopVariable +"\")\n";
       outfile << "wr_arr_index_" + std::to_string(wr_counter) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter) +"\")\n";
+      for(std::string processedLoopPredicate : predicate_string){
+        size_t firstPos = processedLoopPredicate.find("XXX");
+      }
       std::string processedLoopPredicate = predicate_string[0];
       if(predicate_string[0] != ""){
         size_t firstPos = predicate_string[0].find("XXX");
@@ -830,43 +885,49 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
   }
 
 }
-
-std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *v,  std::unordered_map<std::string, bool> &indexV){
-  //what is exp is another binOp??
-  if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
-    const Expr *base = arrayExpr->getBase();
-    SourceLocation bloc = base->getBeginLoc();
-    SourceLocation eloc = base->getEndLoc();
-    CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
-    bool invalid; //is this even needed??
-    StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
-    return sr.str() +"|("+this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV) +")|"+indexV+"_drdVar_"+std::to_string(*v);
-  }else if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
-    std::string left = this->recursivelyFindArrayIndex(binOp->getLHS(),v,indexV);
-    std::string right = this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
-    std::string op = binOp->getOpcodeStr().str();
+//unused
+// std::string OmpDartASTConsumer::recursivelyFindArrayIndex(const Expr *exp, int *v,  std::unordered_map<std::string, bool> &indexV){
+//   //what is exp is another binOp??
+//   if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
+//     const Expr *base = arrayExpr->getBase();
+//     SourceLocation bloc = base->getBeginLoc();
+//     SourceLocation eloc = base->getEndLoc();
+//     CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+//     bool invalid; //is this even needed??
+//     StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
+//     // Arr_name | arr_index | loop Var
+//     std::string loopVars = "";
+//     for(auto lv : indexV){
+//       loopVars = loopVars + "|" +lv.first+"_drdVar_"+std::to_string(*v);
+//     }
+//     if(loopVars == "")loopVars = "|";
+//     return sr.str() +"|("+this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV) +")"+loopVars;
+//   }else if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
+//     std::string left = this->recursivelyFindArrayIndex(binOp->getLHS(),v,indexV);
+//     std::string right = this->recursivelyFindArrayIndex(binOp->getRHS(),v,indexV);
+//     std::string op = binOp->getOpcodeStr().str();
     
-    if(left == "" && right == ""){
-      return "";
-    }else if(left != "" && right != ""){
-      //std::string op = binOp->getOpcodeStr().str();
-      if(op == "="){
-        return left;
-      }else{
-        return left + " " + op + " " + right;  
-      }
-    }else if(left != ""){
-      return left;
-    }else if(right != ""){
-      return right;
-    }
-  }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
-    const clang::Expr *childExpr = ice->getSubExpr();
-    return this->recursivelyFindArrayIndex(childExpr,v,indexV);
-  }else{
-    return "";
-  }
-}
+//     if(left == "" && right == ""){
+//       return "";
+//     }else if(left != "" && right != ""){
+//       //std::string op = binOp->getOpcodeStr().str();
+//       if(op == "="){
+//         return left;
+//       }else{
+//         return left + " " + op + " " + right;  
+//       }
+//     }else if(left != ""){
+//       return left;
+//     }else if(right != ""){
+//       return right;
+//     }
+//   }else if (const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
+//     const clang::Expr *childExpr = ice->getSubExpr();
+//     return this->recursivelyFindArrayIndex(childExpr,v,indexV);
+//   }else{
+//     return "";
+//   }
+// }
 
 
 
@@ -897,9 +958,18 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
       wr = wr.find('[') == std::string::npos ? wr : "DRD_RANDOM_VAR";
       if(op == "="){
-        this->writeMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+        //name |index | loopVar | condition
+        std::string loopVar = "";
+        for(auto lv : indexV){
+          loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+        }
+        this->writeMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
       }else{
-        this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+        std::string loopVar = "";
+        for(auto lv : indexV){
+          loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+        }
+        this->readMap[sr.str()+"|("+wr+")|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
       }
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
@@ -923,7 +993,11 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       bool invalid; //is this even needed??
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
-      this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+      std::string loopVar = "";
+      for(auto lv : indexV){
+        loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+      }
+      this->readMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
       
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
       this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false);
@@ -946,9 +1020,17 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string wr = this->recursivelySetTheString(arrayExpr->getIdx(),v,indexV);
       if(isWrite){
-        this->writeMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+controlCondition] = true;
+        std::string loopVar = "";
+        for(auto lv : indexV){
+          loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+        }
+        this->writeMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+controlCondition] = true;
       }else{
-        this->readMap[sr.str()+"|("+wr+")|"+ indexV + "_drdVar_"+std::to_string(*v)+"|"+controlCondition] = true;
+        std::string loopVar = "";
+        for(auto lv : indexV){
+          loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+        }
+        this->readMap[sr.str()+"|("+wr+")|"+ loopVar +"|"+controlCondition] = true;
       }
   }
 
