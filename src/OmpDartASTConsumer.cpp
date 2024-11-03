@@ -833,6 +833,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
         rmpos = arrIndex2.find(')');
         if (rmpos != std::string::npos) {
+          
           arrIndex2.erase(rmpos, 1);  // Remove one character at position 'pos'
         }
         outfile << arrIndex2 << "= Int(\""+arrIndex2+"\")\n";
