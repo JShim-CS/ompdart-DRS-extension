@@ -106,7 +106,7 @@
 //     array[0] = 0;
 //     int threshold = 10;
 //     #pragma omp parallel for
-//     #pragma drd
+//     //#pragma drd
 //     for (int i = 0; i < size; i++) {
 //         if (array[i] > threshold) {
 //             //-= causes bug
@@ -128,16 +128,17 @@ int main(int argc, char *argv[]){
     //GPTO1_WAR2();
     //GPTO1_WAR3();
     //GPTO1_WAR4();
-    int arr[100];
-    #pragma omp parallel for
-    for(int i = 0; i < 100; i++){
-        for(int k = 0; k <= i; k++){
-            if(k%2 == 0 && i + 1 == 4){
-                arr[i] += i*k;
-            }
-        }
-        //arr[i+1] = arr[i] + 1;
-    }
+    // int arr[100];
+    // #pragma omp parallel for
+    // //
+    // for(int i = 0; i < 100; i++){
+    //     for(int k = 0; k <= i; k++){
+    //         if(k%2 == 0 && i + 1 == 4){
+    //             arr[i] += i*k;
+    //         }
+    //     }
+    //     arr[i+1] = arr[i] + 1;
+    // }
 
 
     return 0;
