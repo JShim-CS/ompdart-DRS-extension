@@ -60,6 +60,7 @@ int main(int argc,char *argv[])
 //   for (i = 0; i <= len - 1; i += 1) {
 //     a[i] = i;
 //   }
+
   dummyMethod4();
   dummyMethod1();
   #pragma omp parallel for private(i)
