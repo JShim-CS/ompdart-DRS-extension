@@ -967,9 +967,9 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
     const Expr *e = UOp->getSubExpr();
     std::string uop = UOp->getOpcodeStr(UOp->getOpcode()).str();
-    // if(uop == "!"){
-    //   uop = "not";
-    // }
+    if(uop == "!"){
+      uop = "Not ";
+    }
     return uop + this->recursivelySetTheString(e, v, indexV);
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
     const Expr *e = Pop->getSubExpr();
