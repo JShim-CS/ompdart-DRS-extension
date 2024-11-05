@@ -1,5 +1,5 @@
-//#include<omp.h>
-
+#include<omp.h>
+#define N 100
 // void NAS_cg(){
 //     int rowstr[100];
 //     int j;
@@ -114,7 +114,188 @@
 //         }
 //     }
 // }
+/*
+void GPT4_DATA_RACE(){
+    int size = 100;
+    int array[size];
 
+    // Loop 1
+    #pragma omp parallel for
+    for (int i = 0; i < 100; i++) {
+        if (i % 10 == 0 && i % 20 != 0)
+            array[i % 10] = i;
+    }
+
+    // Loop 2
+    #pragma omp parallel for
+    for (int i = 0; i < 100; i++) {
+        if (i < 50 || i > 70)
+            array[(i + 30) % 50] = i;
+    }
+
+    // Loop 3
+    #pragma omp parallel for
+    for (int i = 0; i < 90; i += 3) {
+        if (i % 15 == 0 && i % 30 != 0)
+            array[i % 20] = i;
+    }
+
+    // Loop 4
+    #pragma omp parallel for
+    for (int i = 1; i < 100; i++) {
+        if ((i < 40 && i > 20) || (i < 80 && i > 60))
+            array[(i * 2) % 25] = i;
+    }
+
+    // Loop 5
+    #pragma omp parallel for
+    for (int i = 0; i < 100; i += 2) {
+        if (i % 6 == 0 || i % 18 == 0)
+            array[i % 15] = i;
+    }
+
+    // Loop 6
+    #pragma omp parallel for
+    for (int j = 0; j < 100; j++) {
+        for (int k = 0; k < 10; k++) {
+            if (j % 10 == k && k < 5)
+                array[j % 20] = j + k;
+        }
+    }
+
+    // Loop 7
+    #pragma omp parallel for
+    for (int i = 0; i < 60; i++) {
+        if ((i < 30 || i > 45) && i % 5 == 0)
+            array[(i * 3) % 40] = i;
+    }
+
+    // Loop 8
+    #pragma omp parallel for
+    for (int i = 0; i < 100; i++) {
+        if (i % 4 == 0 || i % 6 == 0)
+            array[(i + 10) % 30] = i;
+    }
+
+    // Loop 9
+    #pragma omp parallel for
+    for (int i = 0; i < 120; i += 4) {
+        if (i % 24 == 0 && i < 100)
+            array[(i / 4) % 25] = i;
+    }
+
+    // Loop 10
+    #pragma omp parallel for
+    for (int i = 0; i < 100; i++) {
+        if ((i < 25 || i > 75) && i % 7 == 0)
+            array[(i * 2) % 40] = i;
+    }
+} */
+
+
+void hand_written(){
+    int size = 100;
+    int arr[size];
+   
+    // //loop 1
+    #pragma omp parallel for
+    for(int i = 0; i < size-1; i++){
+        for(int j = 0; j < size; j++){
+            if(j != i && i <= 10){
+                arr[i] = arr[i+1] * (i+j);
+            }
+        }
+    }
+
+    //loop 2
+    // #pragma omp parallel for
+    // for(int i = 0; i < size; i++){
+    //     if(i != 0 ){
+    //         arr[i] = arr[i+1];
+    //     }
+    // }
+
+    //loop 3
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     for(int k = 0; k < size; k++){
+    //         for(int j = 0; j < size; j++){
+    //             if(i != 0 || j != 0){
+    //                 arr[i] = arr[i+1] + j + k - i;
+    //             }
+    //         }
+    //     }
+    // }
+
+    //loop4
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     arr[8] = arr[7];
+    //     arr[7] = arr[8];
+    // }
+
+    // //loop5
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(!(i == 0 || i == 1 || i == 2 || i == 3)){
+    //         arr[i] = arr[i+1] + i;
+    //     }
+          
+    // }
+
+    // //loop6
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(!(i <= 20 && i >= 5)){
+    //         arr[i] = arr[i+1] + i;
+    //     }
+          
+    // }
+
+    //loop7
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(i+8+i*i - i + i/2 + i + 2 == 10 || 8*i +2*i == 10 || 3*i + 2*i == 10 ){
+    //         arr[i] = arr[i+1] + i;
+    //     }
+    // }
+
+    // //loop8
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(N == 200 && i != 0){
+    //         arr[i] = arr[i+1] + i;
+    //     }
+        
+    // }
+
+    //loop9
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(i != 0 && i != 1 && i != 2 && i != 3 && i <= 20){
+    //         arr[i] = arr[i+1] + i;
+    //     }
+        
+    // }
+
+    // //loop10
+    // #pragma omp parallel for
+    // for(int i = 0; i < size-1; i++){
+    //     if(i != 0){
+    //         arr[i] = i;
+    //     }else{
+    //         arr[i+1] = 3;
+    //     }
+        
+    // }
+
+
+
+    
+    
+
+    
+}
 
 
 
@@ -140,6 +321,6 @@ int main(int argc, char *argv[]){
     //     arr[i+1] = arr[i] + 1;
     // }
 
-
+    hand_written();
     return 0;
 }
