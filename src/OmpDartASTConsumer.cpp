@@ -901,9 +901,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for(auto p : Encoded2Original){
       diffString.push_back(p.first);
     }
+    for(auto p : this->encodedWriteOrRead){
+      llvm::outs()<<p.first <<" | " << p.second <<"\n";
+    }
     for(int i = 0; i < diffString.size(); i++){
       for(int j = i+1; j < diffString.size(); j++){
-        outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+        if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
+          outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+        }
+        
       }
     }
     outfile<<"cstrnts = Or(waws,raws)\n";
@@ -1060,6 +1066,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         std::string loopVar = "";
         for(auto lv : indexV){
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
+          this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
         }
         this->writeMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
@@ -1067,6 +1074,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         std::string loopVar = "";
         for(auto lv : indexV){
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+          this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
         }
         this->readMap[sr.str()+"|("+wr+")|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
@@ -1096,6 +1104,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       std::string loopVar = "";
       for(auto lv : indexV){
         loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+        this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
         Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
       }
       this->readMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+realCondition] = true;
@@ -1124,6 +1133,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         std::string loopVar = "";
         for(auto lv : indexV){
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+          this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
         }
         this->writeMap[sr.str()+"|("+wr+")|"+ loopVar+"|"+controlCondition] = true;
@@ -1131,6 +1141,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         std::string loopVar = "";
         for(auto lv : indexV){
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
+          this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
         }
         this->readMap[sr.str()+"|("+wr+")|"+ loopVar +"|"+controlCondition] = true;

@@ -28,7 +28,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   
   std::unordered_map<std::string, bool> readMap;
   std::unordered_map<std::string, bool> writeMap;
-
+  std::unordered_map<std::string,bool> encodedWriteOrRead; //true if used for write op
 public:
   explicit OmpDartASTConsumer(CompilerInstance *CI,
                               const std::string *OutFilePath, bool Aggressive, unsigned* drdPragmaLine, std::unordered_map<std::string, std::string> *macros);

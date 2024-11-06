@@ -301,8 +301,8 @@ void hand_written(){
     #pragma drd
     for(int i = 0; i < size-1; i++){
         if(i != 0){
-            arr[i] = i;
-            arr[i] = i+2;
+            arr[i] = arr[i+3];
+            arr[i] = arr[i+2];
         }else{
             arr[i+1] = 3;
         }
