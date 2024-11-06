@@ -297,16 +297,17 @@ void hand_written(){
     // }
 
     // //loop10
-    // #pragma omp parallel for
-    // #pragma drd
-    // for(int i = 0; i < size-1; i++){
-    //     if(i != 0){
-    //         arr[i] = i;
-    //     }else{
-    //         arr[i+1] = 3;
-    //     }
+    #pragma omp parallel for
+    #pragma drd
+    for(int i = 0; i < size-1; i++){
+        if(i != 0){
+            arr[i] = i;
+            arr[i] = i+2;
+        }else{
+            arr[i+1] = 3;
+        }
         
-    // }
+    }
 
 
 

@@ -119,87 +119,87 @@ void GPT4_DATA_RACE(){
     int size = 100;
     int array[size];
 
-    // Loop 1
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 100; i++) {
-        if (i % 10 == 0 && i % 20 != 0)
-            array[i % 10] = array[i];
-    }
+    // // Loop 1
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 100; i++) {
+    //     if (i % 10 == 0 && i % 20 != 0)
+    //         array[i % 10] = array[i];
+    // }
 
-    // Loop 2
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 100; i++) {
-        if (i < 50 || i > 70)
-            array[(i + 30) % 50] = array[i];
-    }
+    // // Loop 2
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 100; i++) {
+    //     if (i < 50 || i > 70)
+    //         array[(i + 30) % 50] = array[i];
+    // }
 
-    // Loop 3
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 90; i += 3) {
-        if (i % 15 == 0 && i % 30 != 0)
-            array[i % 20] = array[i];
-    }
+    // // Loop 3
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 90; i += 3) {
+    //     if (i % 15 == 0 && i % 30 != 0)
+    //         array[i % 20] = array[i];
+    // }
 
-    // Loop 4
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 1; i < 100; i++) {
-        if ((i < 40 && i > 20) || (i < 80 && i > 60))
-            array[(i * 2) % 25] = array[i];
-    }
+    // // Loop 4
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 1; i < 100; i++) {
+    //     if ((i < 40 && i > 20) || (i < 80 && i > 60))
+    //         array[(i * 2) % 25] = array[i];
+    // }
 
-    // Loop 5
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 100; i += 2) {
-        if (i % 6 == 0 || i % 18 == 0)
-            array[i % 15] = array[i];
-    }
+    // // Loop 5
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 100; i += 2) {
+    //     if (i % 6 == 0 || i % 18 == 0)
+    //         array[i % 15] = array[i];
+    // }
 
-    // Loop 6
-    #pragma omp parallel for
-    //#pragma drd
-    for (int j = 0; j < 100; j++) {
-        for (int k = 0; k < 10; k++) {
-            if (j % 10 == k && k < 5)
-                array[j % 20] = array[j] + j + k;
-        }
-    }
+    // // Loop 6
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int j = 0; j < 100; j++) {
+    //     for (int k = 0; k < 10; k++) {
+    //         if (j % 10 == k && k < 5)
+    //             array[j % 20] = array[j] + j + k;
+    //     }
+    // }
 
-    // Loop 7
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 60; i++) {
-        if ((i < 30 || i > 45) && i % 5 == 0)
-            array[(i * 3) % 40] = array[i];
-    }
+    // // Loop 7
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 60; i++) {
+    //     if ((i < 30 || i > 45) && i % 5 == 0)
+    //         array[(i * 3) % 40] = array[i];
+    // }
 
-    // Loop 8
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 100; i++) {
-        if (i % 4 == 0 || i % 6 == 0)
-            array[(i + 10) % 30] = array[i];
-    }
+    // // Loop 8
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 100; i++) {
+    //     if (i % 4 == 0 || i % 6 == 0)
+    //         array[(i + 10) % 30] = array[i];
+    // }
 
     // Loop 9
-    #pragma omp parallel for
-    //#pragma drd
-    for (int i = 0; i < 120; i += 4) {
-        if (i % 24 == 0 && i < 100)
-            array[(i / 4) % 25] = i + array[i];
-    }
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 120; i += 4) {
+    //     if (i % 24 == 0 && i < 100)
+    //         array[(i / 4) % 25] = i + array[i];
+    // }
 
-    // Loop 10
-    #pragma omp parallel for
-    #pragma drd
-    for (int i = 0; i < 100; i++) {
-        if ((i < 25 || i > 75) && i % 7 == 0)
-            array[(i * 2) % 40] = i - array[i];
-    }
+    // // Loop 10
+    // #pragma omp parallel for
+    // //#pragma drd
+    // for (int i = 0; i < 100; i++) {
+    //     if ((i < 25 || i > 75) && i % 7 == 0)
+    //         array[(i * 2) % 40] = i - array[i];
+    // }
 } 
 
 
@@ -297,16 +297,17 @@ void hand_written(){
     // }
 
     // //loop10
-    // #pragma omp parallel for
-    // #pragma drd
-    // for(int i = 0; i < size-1; i++){
-    //     if(i != 0){
-    //         arr[i] = i;
-    //     }else{
-    //         arr[i+1] = 3;
-    //     }
+    #pragma omp parallel for
+    #pragma drd
+    for(int i = 0; i < size-1; i++){
+        if(i != 0){
+            arr[i] = i;
+            arr[i] = i+2;
+        }else{
+            arr[i+1] = 3;
+        }
         
-    // }
+    }
 
 
 
@@ -340,6 +341,7 @@ int main(int argc, char *argv[]){
     //     arr[i+1] = arr[i] + 1;
     // }
 
-    hand_written();
+    //hand_written();
+    GPT4_DATA_RACE();
     return 0;
 }
