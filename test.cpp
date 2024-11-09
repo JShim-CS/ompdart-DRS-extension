@@ -1,5 +1,17 @@
 // #define N 100
 // #include<stdio.h>
+#include<omp.h>
+void a(){
+  int arr[10];
+
+  #pragma omp parallel for
+  for(int i=0; i < 10; i++){
+    arr[i] = 1;
+  }
+
+}
+
+
 int main(int argc,char *argv[]){
   //int i;
   int arr[10];
