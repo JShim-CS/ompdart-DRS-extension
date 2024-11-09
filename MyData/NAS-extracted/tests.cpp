@@ -193,7 +193,7 @@ void GPT4_DATA_RACE(){
     //         array[(i / 4) % 25] = i + array[i];
     // }
 
-    // // Loop 10
+    // Loop 10
     // #pragma omp parallel for
     // //#pragma drd
     // for (int i = 0; i < 100; i++) {
@@ -260,7 +260,7 @@ void hand_written(){
 
     // //loop6
     // #pragma omp parallel for
-    // #pragma drd
+    // //#pragma drd
     // for(int i = 0; i < size-1; i++){
     //     if(!(i <= 20 && i >= 5)){
     //         arr[i] = arr[i+1] + i;
