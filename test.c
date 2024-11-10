@@ -9,7 +9,6 @@ void a(){
   int arr[size];
 
   #pragma omp parallel for
-  #pragma drd
     for(int i = 0; i < 99; i++){
         if(a == b){
             arr[i] = arr[i+1] + i;
