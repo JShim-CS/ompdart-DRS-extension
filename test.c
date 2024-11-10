@@ -85,6 +85,97 @@ void fp5(){
 }
 
 
+void GPT4_FP() {
+    int array[100]; // A simple integer array with 100 elements
+
+    // Initialize the array with initial values
+    for (int i = 0; i < 100; i++) {
+        array[i] = i;
+    }
+
+    #pragma omp parallel for
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index]; // Read
+            array[index] = temp * 2 - 1; // Write
+        }
+    }
+
+    #pragma omp parallel for
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 7 + 1) % 100;
+        if (i == 10) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 1;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 5 + 2) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 3 - 2;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 2 + 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 3;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 11 + 4) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 4 - 4;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 6 + 5) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 3 + 5;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 8 + 6) % 100;
+        if (i == 20) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 5 - 6;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 4 + 7) % 100;
+        if (i == 12) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 4 + 7;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 9 + 8) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 6 - 8;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 10 + 9) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 5 + 9;
+        }
+    }
+}
+
 
 int main(int argc, char* argv[]){
     //fp1();    //fp  
