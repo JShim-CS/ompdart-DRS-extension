@@ -15,14 +15,22 @@ DRD_RANDOM_VAR = Int("DRD_RANDOM_VAR")
 N = Int("N")
 solver.add(N == 100)
 wr_arr_index_0 = Int("wr_arr_index_0")
+j_drdVar_11 = Int("j_drdVar_11")
+i_drdVar_11 = Int("i_drdVar_11")
+solver.add((i_drdVar_11>=0),(i_drdVar_11<100))
 j_drdVar_8 = Int("j_drdVar_8")
 i_drdVar_8 = Int("i_drdVar_8")
 solver.add((i_drdVar_8>=0),(i_drdVar_8<100))
+solver.add((j_drdVar_11>=0),(j_drdVar_11<200))
 solver.add((j_drdVar_8>=0),(j_drdVar_8<200))
-wr_cond_0 = And (wr_arr_index_0 == (j_drdVar_8 + 1), True)
+wr_cond_0 = And (wr_arr_index_0 == (i_drdVar_11), True)
+wr_arr_index_1 = Int("wr_arr_index_1")
+wr_cond_1 = And (wr_arr_index_1 == (j_drdVar_8 + 1), True)
 waws = False
 
 raws = False
+solver.add(j_drdVar_11 != j_drdVar_8)
+solver.add(i_drdVar_11 != i_drdVar_8)
 cstrnts = Or(waws,raws)
 solver.add(cstrnts)
 if solver.check() == z3.sat:
