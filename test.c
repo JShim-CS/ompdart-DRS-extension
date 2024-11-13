@@ -178,11 +178,17 @@ void GPT4_FP() {
 
 
 int main(int argc, char* argv[]){
-    //fp1();    //fp  
-    //fp2();    //fp
-    //fp3();    //fp
-    //fp4();    //fp
-    //fp5();      //nfp
+
+    for(int i = 0; i < 100;i++){
+        #pragma drd
+        for(int j = 0; j < 200;j++){
+            argv[j+1] = NULL;
+            argv[i] = NULL;
+            
+        }
+
+        argv[i+1] = NULL;
+    }
     return 0;
 
 }

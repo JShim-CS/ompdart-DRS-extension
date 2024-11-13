@@ -316,11 +316,11 @@ std::string OmpDartASTConsumer::getLoopVariable(const ForStmt *fs){
 void OmpDartASTConsumer::recordReadAndWrite(){
   DataTracker *TargetFunction = NULL;
 
-  llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << *(this->drdPragmaLineNumber) << "\n";
+  //llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << *(this->drdPragmaLineNumber) << "\n";
   for(DataTracker *DT : FunctionTrackers){
     std::vector<const Stmt*> loops = DT->getLoops();
     for(const Stmt* s : loops){
-      llvm::outs() << "Checking lines: " << (*SM).getSpellingLineNumber(s->getBeginLoc()) << "\n";
+      //llvm::outs() << "Checking lines: " << (*SM).getSpellingLineNumber(s->getBeginLoc()) << "\n";
       if((*SM).getSpellingLineNumber(s->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
         TargetFunction = DT;
         break;
@@ -339,7 +339,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::unordered_map<std::string, std::string> Encoded2Original;
   //std::stack<std::string> predicateStack;
   std::vector<std::string> differentiableIndexList;
-  std::string diffIndex = "";
+  std::unordered_map<std::string,bool> diffIndex;
   std::unordered_map<std::string,bool> writtenMap;
   std::vector<std::string> indexEncodings;
 
@@ -354,8 +354,17 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     const Stmt* mostRecentControlRegion;
     //const Stmt* closestControlRegion;
     ForStmt* fs = NULL;
+    std::vector<AccessInfo> parentFor;
+
     for(AccessInfo a : ai){
       v++;
+      if(a.Barrier == LoopBegin){
+        parentFor.push_back(a);
+      }else if(a.Barrier == LoopEnd){
+        parentFor.pop_back();
+      }
+
+
       //foundForLoop
       //llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
@@ -367,10 +376,25 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
         loopVar2LoopPred[loopVar] = str;
-        diffIndex = loopVar;
+        diffIndex[loopVar] = true;
         llvm::outs() << loopVar <<" hit \n";
         //differentiableIndexList[loopVar] = {""};
         inTheTargetLoopRegion = true;
+
+       
+        //we need to get the loop info that surround the target loop
+        for (AccessInfo aif : parentFor) {
+          if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
+            ForStmt* fspnc = const_cast<ForStmt*>(fsp);
+            std::string loopVar2 = this->getLoopVariable(fspnc);
+            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV);
+            str2.erase(std::remove_if(str2.begin(), str2.end(), ::isspace), str2.end());
+            loopVar2LoopPred[loopVar2] = str2;
+            diffIndex[loopVar2] = true;
+          }
+          //llvm::outs() << "LINE 386\n";
+            
+        }
         continue;
       }
       
@@ -637,7 +661,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           }
           if(enc.second == loopVar){
             encodedIndex = enc.first;
-            if(enc.second == diffIndex){
+            if(diffIndex.find(enc.second) != diffIndex.end()){ //enc.second == diffIndex
               differentiableIndexList.push_back(enc.first);
             }
             size_t firstPos = p.second.find("XXX");
@@ -782,7 +806,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           }
           if(enc.second == loopVar){
             encodedIndex = enc.first;
-            if(enc.second == diffIndex){
+            if(diffIndex.find(enc.second) != diffIndex.end()){
               differentiableIndexList.push_back(enc.first);
             }
             size_t firstPos = p.second.find("XXX");
@@ -907,7 +931,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for(int i = 0; i < diffString.size(); i++){
       for(int j = i+1; j < diffString.size(); j++){
         if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
-          outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+          if(diffString[i].substr(0,diffString[i].find('_')) == diffString[j].substr(0,diffString[j].find('_'))){
+            outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+          }
+          
         }
         
       }

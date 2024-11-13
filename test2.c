@@ -84,60 +84,111 @@ void fp5(){
     }
 }
 
-void gpt4fp1(){
-    int arr[100];
-    int index = 50; // Fixed index
+
+void GPT4_FP() {
+    int array[100]; // A simple integer array with 100 elements
+
+    // Initialize the array with initial values
+    for (int i = 0; i < 100; i++) {
+        array[i] = i;
+    }
+
     #pragma omp parallel for
-    for(int i = 0; i < 100; i++) {
-        if (index != index) { // Impossible condition
-            arr[index] = i; // Never executed
-        } else {
-            int read = arr[index]; // Always executed
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index]; // Read
+            array[index] = temp * 2 - 1; // Write
+        }
+    }
+
+    #pragma omp parallel for
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 7 + 1) % 100;
+        if (i == 10) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 1;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 5 + 2) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 3 - 2;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 2 + 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 3;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 11 + 4) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 4 - 4;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 6 + 5) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 3 + 5;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 8 + 6) % 100;
+        if (i == 20) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 5 - 6;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 4 + 7) % 100;
+        if (i == 12) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 4 + 7;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 9 + 8) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 6 - 8;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 10 + 9) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 5 + 9;
         }
     }
 }
 
-void gpt4fp2(){
-    int arr[100];
-    #pragma omp parallel for
-    for(int i = 0; i < 100; i++) {
-        if (i != i) { // Impossible condition
-            arr[i] = i; // Never executed
-        } else {
-            int read = arr[i]; // Always executed
-        }
-    }
-
-}
-void gpt4fp3(){
-    int arr[100];
-    int a = 10, b = 2;
-    #pragma omp parallel for
-    #pragma drd
-    for(int i = 0; i < 50; i++) {
-        int idx = a * i + b; // Computed index
-        if (idx < 0) { // Impossible condition for positive a, b, and i
-            arr[idx] = i; // Never executed
-        } else {
-            int read = arr[idx]; // Always executed
-        }
-    }
-
-}
-void gpt4fp4(){}
-void gpt4fp5(){}
-void gpt4fp6(){}
-void gpt4fp7(){}
-void gpt4fp8(){}
-void gpt4fp9(){}
-void gpt4fp10(){}
 
 int main(int argc, char* argv[]){
-    //fp1();    //fp  
-    //fp2();    //fp
-    //fp3();    //fp
-    //fp4();    //fp
-    //fp5();      //nfp
+
+    for(int i = 0; i < 100;i++){
+        #pragma drd
+        for(int j = 0; j < 200;j++){
+            argv[j+1] = NULL;
+            argv[i] = NULL;
+            
+        }
+
+        argv[i+1] = NULL;
+    }
     return 0;
 
 }
