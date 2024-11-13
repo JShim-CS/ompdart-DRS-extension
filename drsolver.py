@@ -26,7 +26,8 @@ solver.add((j_drdVar_8>=0),(j_drdVar_8<200))
 wr_cond_0 = And (wr_arr_index_0 == (i_drdVar_11), True)
 wr_arr_index_1 = Int("wr_arr_index_1")
 wr_cond_1 = And (wr_arr_index_1 == (j_drdVar_8 + 1), True)
-waws = False
+waw_cond_0 = And( wr_cond_0, (wr_arr_index_0 == wr_arr_index_1), wr_cond_1)
+waws = Or(waw_cond_0)
 
 raws = False
 solver.add(j_drdVar_11 != j_drdVar_8)
