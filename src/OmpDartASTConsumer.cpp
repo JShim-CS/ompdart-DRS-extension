@@ -147,7 +147,8 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   
 }
 
-std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,bool> &indexV){
+
+std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,bool> &indexV,bool diff){
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();
@@ -251,11 +252,11 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string inde
     }else{ //does not involve an inequality
       bound2 = bound2.substr(0,bound2.find(';'));
       indexVar.erase(std::remove_if(indexVar.begin(), indexVar.end(), ::isspace), indexVar.end());
-      indexV[indexVar + ""] = true;
+      indexV[indexVar + ""] = diff;
       return bound2;
     }
     indexVar.erase(std::remove_if(indexVar.begin(), indexVar.end(), ::isspace), indexVar.end());
-    indexV[indexVar + ""] = true;
+    indexV[indexVar + ""] = diff;
     // llvm::outs() << "INDEX_VAR: " << indexVar << "\n";
     // std::string tempIndexVar;
     // for(char c : indexVar){
@@ -342,13 +343,14 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::unordered_map<std::string,bool> diffIndex;
   std::unordered_map<std::string,bool> writtenMap;
   std::vector<std::string> indexEncodings;
-
+  //std::unordered_map<std::string, bool> indexVCanBeSame;
+  std::unordered_map<std::string, bool> indexV;
 
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
     bool stillSearching = true;
     bool inTheTargetLoopRegion = false;
-    std::unordered_map<std::string, bool> indexV;
+    //std::unordered_map<std::string, bool> indexV;
     int v = -1;
     std::stack<std::vector<std::string>> chainOfPredicates;
     const Stmt* mostRecentControlRegion;
@@ -358,10 +360,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
     for(AccessInfo a : ai){
       v++;
-      if(a.Barrier == LoopBegin){
-        parentFor.push_back(a);
-      }else if(a.Barrier == LoopEnd){
-        parentFor.pop_back();
+      if(stillSearching){
+        if(a.Barrier == LoopBegin){
+          parentFor.push_back(a);
+        }else if(a.Barrier == LoopEnd){
+          parentFor.pop_back();
+        }
       }
 
 
@@ -371,7 +375,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
-        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,true);
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
@@ -387,7 +391,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
             ForStmt* fspnc = const_cast<ForStmt*>(fsp);
             std::string loopVar2 = this->getLoopVariable(fspnc);
-            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV);
+            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,true);
             str2.erase(std::remove_if(str2.begin(), str2.end(), ::isspace), str2.end());
             loopVar2LoopPred[loopVar2] = str2;
             diffIndex[loopVar2] = true;
@@ -403,7 +407,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
-        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,false);
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
@@ -923,7 +927,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
     std::vector<std::string> diffString;
     for(auto p : Encoded2Original){
-      diffString.push_back(p.first);
+      if(indexV[p.first])diffString.push_back(p.first);
     }
     for(auto p : this->encodedWriteOrRead){
       llvm::outs()<<p.first <<" | " << p.second <<"\n";
