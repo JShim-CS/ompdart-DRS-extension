@@ -183,11 +183,12 @@ int main(int argc, char* argv[]){
         #pragma drd
         for(int j = 0; j < 200;j++){
             argv[j+1] = NULL;
-            argv[i] = NULL;
+            //argv[i] = NULL;
             
         }
 
-        argv[i+1] = NULL;
+        //argv[i] = NULL;
+        //argv[i+1] = NULL;
     }
     return 0;
 
