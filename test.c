@@ -179,9 +179,8 @@ void GPT4_FP() {
 static int arr[100];
 int main(int argc, char* argv[]){
 
-   
+    #pragma drd
     for(int i = 0; i < 100;i++){
-        #pragma drd
         for(int j = 0; j < 200;j++){
             for(int k = 0; k < 100; k++){
                 arr[j+1] = NULL;
