@@ -720,8 +720,14 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       writeVector.push_back(std::make_unique<std::vector<std::string>>());
 
-      writeVector[wr_counter]->push_back("wr_cond_"+ std::to_string(wr_counter));
       writeVector[wr_counter]->push_back(arrName);
+      
+      
+      for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        writeVector[wr_counter]->push_back("wr_cond_"+ std::to_string(wr_counter)+"_"+std::to_string(i));
+      }
+      
+      
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         writeVector[wr_counter]->push_back("wr_arr_index_" + std::to_string(wr_counter)+"_"+std::to_string(i));
       }
@@ -735,16 +741,28 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     std::unordered_map<std::string, bool> wawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = i+1; j < writeVector.size(); j++){
-        if(writeVector[i]->at(1) != writeVector[j]->at(1))continue;
+        if(writeVector[i]->at(0) != writeVector[j]->at(0))continue;
         wawFinalConds["waw_cond_" + std::to_string(wr_counter)] = true;
-        outfile <<"waw_cond_" + std::to_string(wr_counter) <<" = And( "+writeVector[i]->at(0);
+        outfile <<"waw_cond_" + std::to_string(wr_counter) <<" = And( ";
         std::string indexMatchCondition = "";
         //llvm::outs() << "HAHAHAH1\n";
-        for(int k = 2; k < writeVector[i]->size(); k++){
-          indexMatchCondition += ", (" + writeVector[i]->at(k) + " == " +writeVector[j]->at(k) + ")";
+        int k = 1;
+        while(writeVector[i]->at(k).find("wr_cond_") != std::string::npos){
+          indexMatchCondition += writeVector[i]->at(k) + ", "+writeVector[j]->at(k) + ",";
+          k++;
+        }
+        
+        indexMatchCondition += "\n";
+        //indexMatchCondition += ", ";
+        for(;k<writeVector[i]->size();k++){
+          if(k != writeVector[i]->size()-1){
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+          }else{
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+          }
         }
         //llvm::outs() << "HAHAHAH\n";
-        indexMatchCondition += (", " + writeVector[j]->at(0) +", " + writeVector[i]->at(0));
+        //indexMatchCondition += (", " + writeVector[j]->at(0) +", " + writeVector[i]->at(0));
 
         outfile<< indexMatchCondition + ")\n";
         wawCount++;
@@ -1196,6 +1214,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         }
         //llvm::outs()<< "!%^&" << this->getArrayNameAndIndices(arrayExpr,v,indexV) <<"!%^&\n";
         //exit(0);
+        sr = sr.substr(0,sr.find('['));
         this->writeMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
       }else{
         std::string loopVar = "";
@@ -1207,6 +1226,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
+        sr = sr.substr(0,sr.find('['));
         this->readMap[sr.str()+"|"+wr+"|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
       }
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
@@ -1240,6 +1260,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
       }
+      sr = sr.substr(0,sr.find('['));
       this->readMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
       
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
@@ -1272,6 +1293,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
+        sr = sr.substr(0,sr.find('['));
         this->writeMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+controlCondition] = true;
       }else{
         std::string loopVar = "";
@@ -1283,6 +1305,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
+        sr = sr.substr(0,sr.find('['));
         this->readMap[sr.str()+"|"+wr+"|"+ loopVar +"|"+controlCondition] = true;
       }
   }
