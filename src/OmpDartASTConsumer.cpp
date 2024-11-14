@@ -1214,8 +1214,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         }
         //llvm::outs()<< "!%^&" << this->getArrayNameAndIndices(arrayExpr,v,indexV) <<"!%^&\n";
         //exit(0);
-        sr = sr.substr(0,sr.find('['));
-        this->writeMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
+        std::string srr = sr.str();
+        srr = srr.substr(0,srr.find('['));
+        srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
+        this->writeMap[srr+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
       }else{
         std::string loopVar = "";
         for(auto lv : indexV){
@@ -1226,8 +1228,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
-        sr = sr.substr(0,sr.find('['));
-        this->readMap[sr.str()+"|"+wr+"|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+        std::string srr = sr.str();
+        srr = srr.substr(0,srr.find('['));
+        srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
+        this->readMap[srr+"|"+wr+"|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
       }
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
@@ -1260,8 +1264,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
       }
-      sr = sr.substr(0,sr.find('['));
-      this->readMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
+      std::string srr = sr.str();
+      srr = srr.substr(0,srr.find('['));
+      srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
+      this->readMap[srr+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
       
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
       this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
@@ -1293,8 +1299,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
-        sr = sr.substr(0,sr.find('['));
-        this->writeMap[sr.str()+"|"+wr+"|"+ loopVar+"|"+controlCondition] = true;
+        std::string srr = sr.str();
+        srr = srr.substr(0,srr.find('['));
+        srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
+        this->writeMap[srr+"|"+wr+"|"+ loopVar+"|"+controlCondition] = true;
       }else{
         std::string loopVar = "";
         for(auto lv : indexV){
@@ -1305,8 +1313,10 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
         }
-        sr = sr.substr(0,sr.find('['));
-        this->readMap[sr.str()+"|"+wr+"|"+ loopVar +"|"+controlCondition] = true;
+        std::string srr = sr.str();
+        srr = srr.substr(0,srr.find('['));
+        srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
+        this->readMap[srr+"|"+wr+"|"+ loopVar +"|"+controlCondition] = true;
       }
   }
 
