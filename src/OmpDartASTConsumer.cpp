@@ -657,6 +657,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         std::string loopVar = p.first;
         std::string encodedIndex = "";
         for(auto enc : Encoded2Original){
+          //outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
           if(writtenMap.find(enc.first) == writtenMap.end()){
             outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
             writtenMap[enc.first] = true;
@@ -712,11 +713,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       }
       
-      //outfile<<processedLoopPredicate<<"\n";
-
-      // outfile.close();
-      // //dbg
-      // exit(0);
+      
 
       writeVector.push_back(std::make_unique<std::vector<std::string>>());
 
@@ -824,18 +821,25 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       }
 
       
+      std::vector<std::string> tempArrInfo;
+      this->separateStringBy(arrIndex,'@',tempArrInfo);
+      for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        outfile << "r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter)+ "_"+ std::to_string(i) +"\")\n";
+      
+      }
 
       
-      outfile << "r_arr_index_" + std::to_string(r_counter) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter) +"\")\n";
+      //outfile << "r_arr_index_" + std::to_string(r_counter) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter) +"\")\n";
       
       for(auto p : loopVar2LoopPred){
         std::string loopVar = p.first;
         std::string encodedIndex = "";
         for(auto enc : Encoded2Original){
-
+          //outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
           if(writtenMap.find(enc.first) == writtenMap.end()){
-            outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
+            //outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
             //llvm::outs() << enc.first << " ~~~~~~~~~~\n";
+            outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
             writtenMap[enc.first] = true;
             
           }
@@ -890,16 +894,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           condition = condition +"!= 0";
       }
 
-      
 
-      //if(writtenMap.find(arrIndex) == writtenMap.end()){
-      // for(auto enc : Encoded2Original){
-      //     if(writtenMap.find(enc.first) == writtenMap.end()){
-      //       outfile << enc.first + " = Int(\"" + enc.first +"\")\n";
-      //       //llvm::outs() << enc.first << " ~~~~~~~~~~\n";
-      //       writtenMap[enc.first] = true;
-      //     }
-      // }
+        //is this even needed??
         std::string arrIndex2 = arrIndex;
         size_t rmpos = arrIndex2.find('(');
         if (rmpos != std::string::npos) {
@@ -909,21 +905,51 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         if (rmpos != std::string::npos) {
           arrIndex2.erase(rmpos, 1);  // Remove one character at position 'pos'
         }
+        arrIndex = arrIndex2;
+        
 
 
-        //outfile << arrIndex2 << "= Int(\""+arrIndex2+"\")\n";
-        //writtenMap[arrIndex] = true;
-      //}
-      outfile << "r_cond_"+ std::to_string(r_counter) 
-                + " = And ("+ "r_arr_index_" + std::to_string(r_counter)
-               + " == " + arrIndex +", " + condition + ")\n";
+      
+
+      
+
+      for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        outfile << "r_cond_"+ std::to_string(r_counter) +"_"+std::to_string(i)
+                + " = And ("+ "r_arr_index_" + std::to_string(r_counter)+"_"+std::to_string(i)
+               + " == " + tempArrInfo[2+i] +", " + condition + ")\n";
+      }
+
+
+        
+
+      
+
+      // outfile << "r_cond_"+ std::to_string(r_counter) 
+      //           + " = And ("+ "r_arr_index_" + std::to_string(r_counter)
+      //          + " == " + arrIndex +", " + condition + ")\n";
       //outfile<<processedLoopPredicate<<"\n";
+
       readVector.push_back(std::make_unique<std::vector<std::string>>());
 
-      readVector[r_counter]->push_back("r_cond_"+ std::to_string(r_counter));
-      readVector[r_counter]->push_back("r_arr_index_" + std::to_string(r_counter));
-      //readVector[r_counter]->push_back(loopVariable);
       readVector[r_counter]->push_back(arrName);
+      
+      
+      for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        readVector[r_counter]->push_back("r_cond_"+ std::to_string(r_counter)+"_"+std::to_string(i));
+      }
+      
+      
+      for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        readVector[r_counter]->push_back("wr_arr_index_" + std::to_string(r_counter)+"_"+std::to_string(i));
+      }
+
+
+      // readVector.push_back(std::make_unique<std::vector<std::string>>());
+
+      // readVector[r_counter]->push_back("r_cond_"+ std::to_string(r_counter));
+      // readVector[r_counter]->push_back("r_arr_index_" + std::to_string(r_counter));
+     
+      // readVector[r_counter]->push_back(arrName);
       r_counter++;
     }
 
@@ -932,11 +958,32 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     std::unordered_map<std::string, bool> rawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = 0; j < readVector.size(); j++){
-        if(readVector[j]->at(2) != writeVector[i]->at(2))continue;
+        if(writeVector[i]->at(0) != readVector[j]->at(0))continue;
+        //if(readVector[j]->at(2) != writeVector[i]->at(2))continue;
         rawFinalConds["raw_cond_" + std::to_string(wr_counter)] = true;
-        outfile <<"raw_cond_" + std::to_string(wr_counter) 
-                <<" = And( "+writeVector[i]->at(0) + ", (" + writeVector[i]->at(1) + " == " +readVector[j]->at(1) + "), "
-                << readVector[j]->at(0) + ")\n";
+        outfile <<"raw_cond_" + std::to_string(wr_counter);
+
+        std::string indexMatchCondition = "";
+        //llvm::outs() << "HAHAHAH1\n";
+        int k = 1;
+        while(writeVector[i]->at(k).find("wr_cond_") != std::string::npos){
+          indexMatchCondition += writeVector[i]->at(k) + ", "+readVector[j]->at(k) + ",";
+          k++;
+        }
+        
+        indexMatchCondition += "\n";
+        //indexMatchCondition += ", ";
+        for(;k<writeVector[i]->size();k++){
+          if(k != writeVector[i]->size()-1){
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+          }else{
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+          }
+        }
+        //llvm::outs() << "HAHAHAH\n";
+        //indexMatchCondition += (", " + writeVector[j]->at(0) +", " + writeVector[i]->at(0));
+
+        outfile<< indexMatchCondition + ")\n";
         rawCount++;
         wr_counter++;
       }
