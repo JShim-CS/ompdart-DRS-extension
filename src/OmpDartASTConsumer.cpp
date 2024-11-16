@@ -606,6 +606,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             temp = "";
             pipeCounter++;
           }else if(pipeCounter == 1){
+            
             arrIndex = temp;
             pipeCounter++;
             temp = "";
@@ -1274,11 +1275,13 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
           if(lv.second){
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           }
+          
+          //loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
         }
         std::string srr = sr.str();
         srr = srr.substr(0,srr.find('['));
         srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
-        this->readMap[srr+"|"+wr+"|"+ loopVar + "_drdVar_"+std::to_string(*v)+"|"+realCondition] = true;
+        this->readMap[srr+"|"+wr+"|"+ loopVar +"|"+realCondition] = true;
       }
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
@@ -1309,7 +1312,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
         if(lv.second){
             this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
-          }
+        }
       }
       std::string srr = sr.str();
       srr = srr.substr(0,srr.find('['));
