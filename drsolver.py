@@ -17,6 +17,9 @@ N = Int("N")
 solver.add(N == 100)
 wr_arr_index_0_0 = Int("wr_arr_index_0_0")
 wr_arr_index_0_1 = Int("wr_arr_index_0_1")
+i_drdVar_24 = Int("i_drdVar_24")
+k_drdVar_24 = Int("k_drdVar_24")
+solver.add((k_drdVar_24>=0),(k_drdVar_24<100))
 j_drdVar_21 = Int("j_drdVar_21")
 k_drdVar_21 = Int("k_drdVar_21")
 solver.add((k_drdVar_21>=0),(k_drdVar_21<100))
@@ -27,33 +30,75 @@ k_drdVar_20 = Int("k_drdVar_20")
 solver.add((k_drdVar_20>=0),(k_drdVar_20<100))
 i_drdVar_17 = Int("i_drdVar_17")
 j_drdVar_17 = Int("j_drdVar_17")
+j_drdVar_24 = Int("j_drdVar_24")
 k_drdVar_17 = Int("k_drdVar_17")
 solver.add((k_drdVar_17>=0),(k_drdVar_17<100))
 solver.add((j_drdVar_21>=0),(j_drdVar_21<200))
 solver.add((j_drdVar_20>=0),(j_drdVar_20<200))
 solver.add((j_drdVar_17>=0),(j_drdVar_17<200))
+solver.add((j_drdVar_24>=0),(j_drdVar_24<200))
+solver.add((i_drdVar_24>=0),(i_drdVar_24<100))
 solver.add((i_drdVar_21>=0),(i_drdVar_21<100))
 solver.add((i_drdVar_20>=0),(i_drdVar_20<100))
 solver.add((i_drdVar_17>=0),(i_drdVar_17<100))
-wr_cond_0_0 = And (wr_arr_index_0_0 == j_drdVar_21, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
-wr_cond_0_1 = And (wr_arr_index_0_1 == k_drdVar_21, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
+wr_cond_0_0 = And (wr_arr_index_0_0 == j_drdVar_24 + 1, (Or((i_drdVar_24!=0),And((j_drdVar_24!=0),k_drdVar_24!=2))))
+wr_cond_0_1 = And (wr_arr_index_0_1 == k_drdVar_24 + 1, (Or((i_drdVar_24!=0),And((j_drdVar_24!=0),k_drdVar_24!=2))))
 wr_arr_index_1_0 = Int("wr_arr_index_1_0")
 wr_arr_index_1_1 = Int("wr_arr_index_1_1")
-wr_cond_1_0 = And (wr_arr_index_1_0 == j_drdVar_20, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
-wr_cond_1_1 = And (wr_arr_index_1_1 == k_drdVar_20, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
+wr_cond_1_0 = And (wr_arr_index_1_0 == j_drdVar_21, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
+wr_cond_1_1 = And (wr_arr_index_1_1 == k_drdVar_21, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
 wr_arr_index_2_0 = Int("wr_arr_index_2_0")
 wr_arr_index_2_1 = Int("wr_arr_index_2_1")
-wr_cond_2_0 = And (wr_arr_index_2_0 == i_drdVar_17, (Or((i_drdVar_17!=0),And((j_drdVar_17!=0),k_drdVar_17!=2))))
-wr_cond_2_1 = And (wr_arr_index_2_1 == j_drdVar_17, (Or((i_drdVar_17!=0),And((j_drdVar_17!=0),k_drdVar_17!=2))))
+wr_cond_2_0 = And (wr_arr_index_2_0 == j_drdVar_21 + 1, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
+wr_cond_2_1 = And (wr_arr_index_2_1 == k_drdVar_21 + 1, (Or((i_drdVar_21!=0),And((j_drdVar_21!=0),k_drdVar_21!=2))))
+wr_arr_index_3_0 = Int("wr_arr_index_3_0")
+wr_arr_index_3_1 = Int("wr_arr_index_3_1")
+wr_cond_3_0 = And (wr_arr_index_3_0 == j_drdVar_20 + 1, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
+wr_cond_3_1 = And (wr_arr_index_3_1 == k_drdVar_20 + 1, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
+wr_arr_index_4_0 = Int("wr_arr_index_4_0")
+wr_arr_index_4_1 = Int("wr_arr_index_4_1")
+wr_cond_4_0 = And (wr_arr_index_4_0 == j_drdVar_20, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
+wr_cond_4_1 = And (wr_arr_index_4_1 == k_drdVar_20, (Or((i_drdVar_20!=0),And((j_drdVar_20!=0),k_drdVar_20!=2))))
+wr_arr_index_5_0 = Int("wr_arr_index_5_0")
+wr_arr_index_5_1 = Int("wr_arr_index_5_1")
+wr_cond_5_0 = And (wr_arr_index_5_0 == i_drdVar_17, (Or((i_drdVar_17!=0),And((j_drdVar_17!=0),k_drdVar_17!=2))))
+wr_cond_5_1 = And (wr_arr_index_5_1 == j_drdVar_17, (Or((i_drdVar_17!=0),And((j_drdVar_17!=0),k_drdVar_17!=2))))
 waw_cond_0 = And( wr_cond_0_0, wr_cond_1_0,wr_cond_0_1, wr_cond_1_1,
 (wr_arr_index_0_0 == wr_arr_index_1_0), (wr_arr_index_0_1 == wr_arr_index_1_1))
 waw_cond_1 = And( wr_cond_0_0, wr_cond_2_0,wr_cond_0_1, wr_cond_2_1,
 (wr_arr_index_0_0 == wr_arr_index_2_0), (wr_arr_index_0_1 == wr_arr_index_2_1))
-waw_cond_2 = And( wr_cond_1_0, wr_cond_2_0,wr_cond_1_1, wr_cond_2_1,
+waw_cond_2 = And( wr_cond_0_0, wr_cond_3_0,wr_cond_0_1, wr_cond_3_1,
+(wr_arr_index_0_0 == wr_arr_index_3_0), (wr_arr_index_0_1 == wr_arr_index_3_1))
+waw_cond_3 = And( wr_cond_0_0, wr_cond_4_0,wr_cond_0_1, wr_cond_4_1,
+(wr_arr_index_0_0 == wr_arr_index_4_0), (wr_arr_index_0_1 == wr_arr_index_4_1))
+waw_cond_4 = And( wr_cond_0_0, wr_cond_5_0,wr_cond_0_1, wr_cond_5_1,
+(wr_arr_index_0_0 == wr_arr_index_5_0), (wr_arr_index_0_1 == wr_arr_index_5_1))
+waw_cond_5 = And( wr_cond_1_0, wr_cond_2_0,wr_cond_1_1, wr_cond_2_1,
 (wr_arr_index_1_0 == wr_arr_index_2_0), (wr_arr_index_1_1 == wr_arr_index_2_1))
-waws = Or(waw_cond_2, waw_cond_1, waw_cond_0)
+waw_cond_6 = And( wr_cond_1_0, wr_cond_3_0,wr_cond_1_1, wr_cond_3_1,
+(wr_arr_index_1_0 == wr_arr_index_3_0), (wr_arr_index_1_1 == wr_arr_index_3_1))
+waw_cond_7 = And( wr_cond_1_0, wr_cond_4_0,wr_cond_1_1, wr_cond_4_1,
+(wr_arr_index_1_0 == wr_arr_index_4_0), (wr_arr_index_1_1 == wr_arr_index_4_1))
+waw_cond_8 = And( wr_cond_1_0, wr_cond_5_0,wr_cond_1_1, wr_cond_5_1,
+(wr_arr_index_1_0 == wr_arr_index_5_0), (wr_arr_index_1_1 == wr_arr_index_5_1))
+waw_cond_9 = And( wr_cond_2_0, wr_cond_3_0,wr_cond_2_1, wr_cond_3_1,
+(wr_arr_index_2_0 == wr_arr_index_3_0), (wr_arr_index_2_1 == wr_arr_index_3_1))
+waw_cond_10 = And( wr_cond_2_0, wr_cond_4_0,wr_cond_2_1, wr_cond_4_1,
+(wr_arr_index_2_0 == wr_arr_index_4_0), (wr_arr_index_2_1 == wr_arr_index_4_1))
+waw_cond_11 = And( wr_cond_2_0, wr_cond_5_0,wr_cond_2_1, wr_cond_5_1,
+(wr_arr_index_2_0 == wr_arr_index_5_0), (wr_arr_index_2_1 == wr_arr_index_5_1))
+waw_cond_12 = And( wr_cond_3_0, wr_cond_4_0,wr_cond_3_1, wr_cond_4_1,
+(wr_arr_index_3_0 == wr_arr_index_4_0), (wr_arr_index_3_1 == wr_arr_index_4_1))
+waw_cond_13 = And( wr_cond_3_0, wr_cond_5_0,wr_cond_3_1, wr_cond_5_1,
+(wr_arr_index_3_0 == wr_arr_index_5_0), (wr_arr_index_3_1 == wr_arr_index_5_1))
+waw_cond_14 = And( wr_cond_4_0, wr_cond_5_0,wr_cond_4_1, wr_cond_5_1,
+(wr_arr_index_4_0 == wr_arr_index_5_0), (wr_arr_index_4_1 == wr_arr_index_5_1))
+waws = Or(waw_cond_14, waw_cond_13, waw_cond_0, waw_cond_11, waw_cond_1, waw_cond_2, waw_cond_3, waw_cond_8, waw_cond_4, waw_cond_7, waw_cond_9, waw_cond_10, waw_cond_5, waw_cond_6, waw_cond_12)
 
 raws = False
+solver.add(i_drdVar_24 != i_drdVar_21)
+solver.add(i_drdVar_24 != i_drdVar_20)
+solver.add(i_drdVar_24 != i_drdVar_17)
 solver.add(i_drdVar_21 != i_drdVar_20)
 solver.add(i_drdVar_21 != i_drdVar_17)
 solver.add(i_drdVar_20 != i_drdVar_17)

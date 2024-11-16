@@ -187,7 +187,7 @@ int main(int argc, char* argv[]){
                 //arr[j+1] = NULL;
                 //arr[k+1] = NULL;
                 a  [i][j] = 0;
-                argc = a[j][k] = argc;
+                argc = a[j][k] = a[j+1][k+1] = 2;
                 }
             }
         }
