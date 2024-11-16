@@ -607,7 +607,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       outfile << pair.first + " = Int(\"" + pair.first + "\")\n";
       outfile << "solver.add(" + pair.first + " == " + pair.second + ")\n";
     }
-    llvm::outs() <<"LINE 588\n";
+    //llvm::outs() <<"LINE 588\n";
     int wr_counter = 0;
     std::vector<std::unique_ptr<std::vector<std::string>>> writeVector;
     for (const auto &pair : this->writeMap) {
@@ -1003,7 +1003,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           k++;
         }
         
-        llvm::outs() <<"START\n";
+        //llvm::outs() <<"START\n";
         indexMatchCondition += "\n";
         //indexMatchCondition += ", ";
         for(;k<writeVector[i]->size();k++){
@@ -1013,7 +1013,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+readVector[j]->at(k) + ")";
           }
         }
-        llvm::outs() <<"END\n";
+        //llvm::outs() <<"END\n";
         //llvm::outs() << "HAHAHAH\n";
         //indexMatchCondition += (", " + writeVector[j]->at(0) +", " + writeVector[i]->at(0));
 
