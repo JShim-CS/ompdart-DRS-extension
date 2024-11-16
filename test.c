@@ -186,7 +186,7 @@ int main(int argc, char* argv[]){
 
     //#pragma omp for
     #pragma drd
-    for (i = 1; i < arr[0]; i++) {
+    for (i = arr[2]; i < arr[0]; i++) {
         for (j = 1; j < b; j++) {
             for (k = 1; k < c; k++) {
                 for (m = 0; m < 5; m++) {

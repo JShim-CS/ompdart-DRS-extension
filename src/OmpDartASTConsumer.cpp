@@ -170,24 +170,25 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string inde
     long b1 = 0;
     bool negative = false;
     bool b1isVar = true;
-    
-    for(char c : bound1){
+    if(bound1.find('[') == std::string::npos){
+      for(char c : bound1){
 
 
-      if(c == '-'){
-         negative = true;
+        if(c == '-'){
+          negative = true;
+        }
+
+        if(c >= '0' && c <= '9'){
+          if(negative){
+            b1 =  b1*10 - (c - '0');
+            b1isVar = false;
+          }else{
+            b1 = b1*10 + (c - '0');
+            b1isVar = false;
+          } 
+        }
+
       }
-
-      if(c >= '0' && c <= '9'){
-        if(negative){
-          b1 =  b1*10 - (c - '0');
-          b1isVar = false;
-        }else{
-          b1 = b1*10 + (c - '0');
-          b1isVar = false;
-        } 
-      }
-
     }
      
     std::string bound2 = condstr.str();
@@ -266,28 +267,49 @@ std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string inde
     // }
     // indexVar = tempIndexVar;
     std::string bb1 = b1isVar ? bound1 : std::to_string(b1);
+
+    if(bound2.find('[') != std::string::npos){
+      if(bb1.find('[') != std::string::npos)return "";
+      bound2 = "";
+    }
+
     switch(code){
       case 1:
-        if(increment){
-          
-          return "( XXX  >= " + bb1 + ") && "
+        if(bound2 != ""){
+          if(increment){
+            return "( XXX  >= " + bb1 + ") && "
               + "( XXX "+ bound2 + ")";
+          }else{
+            
+            return "( XXX  <= " + bb1 + ") && "
+                + "( XXX " + bound2 + ")";
+          }
         }else{
-           
-          return "( XXX  <= " + bb1 + ") && "
-              + "( XXX " + bound2 + ")";
+          if(increment){
+            return "( XXX  >= " + bb1 + ")";
+          }else{
+            return "( XXX  <= " + bb1 + ")";
+          }
         }
-
+        
       case 2:
-        if(increment){
-          
-          return "( XXX  >= " + bb1 + ") && "
-              + "(" + bound2 + " XXX )";
+        if(bound2 != ""){
+          if(increment){
+            return "( XXX  >= " + bb1 + ") && "
+                + "(" + bound2 + " XXX )";
+          }else{
+            
+            return "( XXX <= " + bb1 + ") && "
+                + "(" + bound2 + " XXX )";
+          }
         }else{
-          
-          return "( XXX <= " + bb1 + ") && "
-              + "(" + bound2 + " XXX )";
+          if(increment){
+            return "( XXX  >= " + bb1 + ")";
+          }else{
+            return "( XXX <= " + bb1 + ")";
+          }
         }
+        
         
     }
 
@@ -683,8 +705,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               }
               
               if(writtenMap.find(processedLoopPredicate) == writtenMap.end()){
-                outfile << "solver.add(" + processedLoopPredicate+")\n";
-                writtenMap[processedLoopPredicate] = true;
+                if(processedLoopPredicate != ""){
+                  outfile << "solver.add(" + processedLoopPredicate+")\n";
+                  writtenMap[processedLoopPredicate] = true;
+                }
               }
               
                
