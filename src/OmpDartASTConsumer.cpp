@@ -425,13 +425,13 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           continue;
         }
 
-        if(const clang::BinaryOperator *binOp = llvm::dyn_cast<clang::BinaryOperator>(a.S)){
-          std::string op = binOp->getOpcodeStr().str();
-          //if(op == "+=" || op == "-=" || op == "*=" || op == "/="){
-          //  llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
-          //  exit(0);
-          //}
-        }
+        // if(const clang::BinaryOperator *binOp = llvm::dyn_cast<clang::BinaryOperator>(a.S)){
+        //   std::string op = binOp->getOpcodeStr().str();
+        //   //if(op == "+=" || op == "-=" || op == "*=" || op == "/="){
+        //   //  llvm::outs()<< "\nDATA RACE FROM ONE OF THE FOLLOWING COULD OCCUR: +=  -=  *=  /=\n";
+        //   //  exit(0);
+        //   //}
+        // }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           bool invalid;
@@ -440,10 +440,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           CharSourceRange arrRange = CharSourceRange::getTokenRange(bloc,eloc);
           StringRef sr =  Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
           std::string exp = sr.str();
+          if(exp.find("[") == std::string::npos)continue;
           exp.erase(std::remove_if(exp.begin(), exp.end(), ::isspace), exp.end());
           
           //exp == indexV --> No need to track already tracked loop index variable
-          if(indexV.find(exp) != indexV.end())continue;
+          //if(indexV.find(exp) != indexV.end())continue;
 
 
           const Expr *cond = NULL; //(dyn_cast<IfStmt>(a.S))->getCond();
@@ -519,7 +520,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           //if(requiredCondition != ""){
             //llvm::outs() <<  "(" << exp <<" requires: ";
             this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition,false,Encoded2Original);
-            llvm::outs() << requiredCondition << " ) ";
+            //llvm::outs() << requiredCondition << " ) ";
             if(a.ArraySubscript){
               const Expr *base = a.ArraySubscript->getBase();
               bloc = base->getBeginLoc();
@@ -531,35 +532,31 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             }
             llvm::outs() << "\n";
            
-            //requiredCondition = "";
-          //}
+            
         }
 
       }
     }
 
-    if(!stillSearching){
-      //llvm::outs() << "predicate String: " << predicate_string[0] << "\n";
-      //llvm::outs() << "indexVAR: " << indexV << "\n";
-    }
+    
     
   }
 
-  llvm::outs() << "ADDITIONAL VARS:\n";
-  for (const auto &pair : Visitor->allVars) {
-    llvm::outs() << pair.first <<"\n";
+  // llvm::outs() << "ADDITIONAL VARS:\n";
+  // for (const auto &pair : Visitor->allVars) {
+  //   llvm::outs() << pair.first <<"\n";
 
-  }
+  // }
 
-  llvm::outs()<< "WRITES:\n";
-  for (const auto &pair : this->writeMap) {
-    llvm::outs() << pair.first <<"\n";
-  }
+  // llvm::outs()<< "WRITES:\n";
+  // for (const auto &pair : this->writeMap) {
+  //   llvm::outs() << pair.first <<"\n";
+  // }
 
-  llvm::outs()<< "READS:\n";
-  for (const auto &pair : this->readMap) {
-    llvm::outs() << pair.first <<"\n";
-  }
+  // llvm::outs()<< "READS:\n";
+  // for (const auto &pair : this->readMap) {
+  //   llvm::outs() << pair.first <<"\n";
+  // }
 
   std::ofstream outfile("drsolver.py");
   try{
@@ -575,7 +572,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       //rawMacro.erase(std::remove_if(rawMacro.begin(), rawMacro.end(), ::isspace), rawMacro.end());
       //rawInt.erase(std::remove_if(rawInt.begin(), rawInt.end(), ::isspace), rawInt.end());
       bool continueFirstLoop = false;
-      llvm::outs()<<"IN READ AND WRITE: " << pair.second <<" THE END\n";
+      //llvm::outs()<<"IN READ AND WRITE: " << pair.second <<" THE END\n";
       for(char c : pair.second){
         if(c < '0' || c > '9'){
           continueFirstLoop = true;
@@ -588,7 +585,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       outfile << pair.first + " = Int(\"" + pair.first + "\")\n";
       outfile << "solver.add(" + pair.first + " == " + pair.second + ")\n";
     }
-    
+    llvm::outs() <<"LINE 588\n";
     int wr_counter = 0;
     std::vector<std::unique_ptr<std::vector<std::string>>> writeVector;
     for (const auto &pair : this->writeMap) {
@@ -734,6 +731,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       wr_counter++;
     }
+
+    
     int wawCount = 0;
     wr_counter = 0;
     std::unordered_map<std::string, bool> wawFinalConds;
@@ -767,6 +766,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         wr_counter++;
       }
     }
+    
     if(wawCount>=1){
       outfile <<"waws = Or(";
     }else{
@@ -785,7 +785,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     }
 
     outfile<<"\n";
-
+    
     int r_counter = 0;
     std::vector<std::unique_ptr<std::vector<std::string>>> readVector;
     for (const auto &pair : this->readMap) {
@@ -828,7 +828,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         outfile << "r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter)+ "_"+ std::to_string(i) +"\")\n";
       
       }
-
+      //llvm::outs() <<"LINE 831\n";
       
       //outfile << "r_arr_index_" + std::to_string(r_counter) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter) +"\")\n";
       
@@ -941,7 +941,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       
       
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
-        readVector[r_counter]->push_back("wr_arr_index_" + std::to_string(r_counter)+"_"+std::to_string(i));
+        readVector[r_counter]->push_back("r_arr_index_" + std::to_string(r_counter)+"_"+std::to_string(i));
       }
 
 
@@ -952,35 +952,44 @@ void OmpDartASTConsumer::recordReadAndWrite(){
      
       // readVector[r_counter]->push_back(arrName);
       r_counter++;
+      //llvm::outs() <<"LINE 955\n";
     }
 
+    //llvm::outs() <<"LINE 958\n";
     int rawCount = 0;
     wr_counter = 0;
     std::unordered_map<std::string, bool> rawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
       for (int j = 0; j < readVector.size(); j++){
+       
         if(writeVector[i]->at(0) != readVector[j]->at(0))continue;
+        
         //if(readVector[j]->at(2) != writeVector[i]->at(2))continue;
+        
         rawFinalConds["raw_cond_" + std::to_string(wr_counter)] = true;
-        outfile <<"raw_cond_" + std::to_string(wr_counter);
+        outfile <<"raw_cond_" + std::to_string(wr_counter) + "= And( ";
+         
 
         std::string indexMatchCondition = "";
         //llvm::outs() << "HAHAHAH1\n";
+       
         int k = 1;
         while(writeVector[i]->at(k).find("wr_cond_") != std::string::npos){
           indexMatchCondition += writeVector[i]->at(k) + ", "+readVector[j]->at(k) + ",";
           k++;
         }
         
+        llvm::outs() <<"START\n";
         indexMatchCondition += "\n";
         //indexMatchCondition += ", ";
         for(;k<writeVector[i]->size();k++){
           if(k != writeVector[i]->size()-1){
-            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+readVector[j]->at(k) + "), ";
           }else{
-            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+readVector[j]->at(k) + ")";
           }
         }
+        llvm::outs() <<"END\n";
         //llvm::outs() << "HAHAHAH\n";
         //indexMatchCondition += (", " + writeVector[j]->at(0) +", " + writeVector[i]->at(0));
 
@@ -989,6 +998,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         wr_counter++;
       }
     }
+    //llvm::outs() <<"LINE 994\n";
     if(rawCount>=1){
       outfile <<"raws = Or(";
     }else{

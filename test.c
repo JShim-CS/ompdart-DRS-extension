@@ -178,23 +178,24 @@ void GPT4_FP() {
 
 static int arr[100];
 int main(int argc, char* argv[]){
-    int a  [100][200];
+    int u[100][100][100][100];
+    int rhs[100][100][100][100];
+    //#pragma drd
+    int i, j, k, m,a,b,c;
+    int arr[10];
+
+    //#pragma omp for
     #pragma drd
-    for(int i = 0; i < 100;i++){
-        for(int j = 0; j < 200;j++){
-            for(int k = 0; k < 100; k++){
-                if(i || j && k!=2){
-                //arr[j+1] = NULL;
-                //arr[k+1] = NULL;
-                a  [i][j] = 0;
-                argc = a[j][k] = a[j+1][k+1] = 2;
+    for (i = 1; i < arr[0]; i++) {
+        for (j = 1; j < b; j++) {
+            for (k = 1; k < c; k++) {
+                for (m = 0; m < 5; m++) {
+                    u[i][j][k][m] = u[i][j][k][m] + rhs[i][j][k][m];
                 }
             }
         }
+  }
 
-        //argv[i] = NULL;
-        //argv[i+1] = NULL;
-    }
     return 0;
 
 }
