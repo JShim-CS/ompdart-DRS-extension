@@ -1283,17 +1283,21 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
         this->readMap[srr+"|"+wr+"|"+ loopVar +"|"+realCondition] = true;
       }
+      
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
         this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,true,Encoded2Original);
+        
       }else{
         this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
+        
       }
     }else{
       this->setArrayIndexEncoding(binOp->getLHS(),v,indexV,controlCondition,false,Encoded2Original);
+      
     }
 
-    *v += 1;
+    //*v += 1;
 
 
     if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getRHS())){
@@ -1321,14 +1325,18 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getRHS())){
       this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
+      
     }else{
       this->setArrayIndexEncoding(binOp->getRHS(),v,indexV,controlCondition,false,Encoded2Original);
+      
     }
     
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
     this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
+    
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
     this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
+    
 
   }else if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
       int indexPos = 0;
@@ -1368,6 +1376,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
         this->readMap[srr+"|"+wr+"|"+ loopVar +"|"+controlCondition] = true;
       }
+      
   }
 
 }
