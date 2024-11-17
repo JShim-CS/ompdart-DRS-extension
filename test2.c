@@ -314,7 +314,6 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     initialize                                  
 c-------------------------------------------------------------------*/
-//#pragma drd
   for (i = 0; i < grid_points[0]; i++) {
     for (j = 0; j < grid_points[1]; j++) {
       for (k = 0; k < grid_points[2]; k++) {
@@ -328,7 +327,7 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     xi-direction flux differences                      
 c-------------------------------------------------------------------*/
-  #pragma drd
+  //#pragma drd
   for (j = 1; j < grid_points[1]-1; j++) {
     eta = (double)j * dnym1;
     
@@ -688,7 +687,7 @@ c  the corner elements are not used, but it convenient (and faster)
 c  to compute the whole thing with a simple loop. Make sure those 
 c  values are nonzero by initializing the whole thing here. 
 c-------------------------------------------------------------------*/
-#pragma omp for
+#pragma drd
   for (i = 0; i < IMAX; i++) {
     for (j = 0; j < IMAX; j++) {
       for (k = 0; k < IMAX; k++) {
