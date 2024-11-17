@@ -373,7 +373,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     bool stillSearching = true;
     bool inTheTargetLoopRegion = false;
     //std::unordered_map<std::string, bool> indexV;
-    int v = -1;
+    int v = 0;
     std::stack<std::vector<std::string>> chainOfPredicates;
     const Stmt* mostRecentControlRegion;
     //const Stmt* closestControlRegion;
@@ -381,7 +381,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     std::vector<AccessInfo> parentFor;
 
     for(AccessInfo a : ai){
-      v++;
+      //v++;
+      llvm::outs()<<v<<"\n";
       if(stillSearching){
         if(a.Barrier == LoopBegin){
           parentFor.push_back(a);
@@ -434,6 +435,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
         loopVar2LoopPred[loopVar] = str;
+        //inTheTargetLoopRegion = false;
         continue;
       }
 
@@ -456,6 +458,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         // }
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
+          v++;
           bool invalid;
           SourceLocation bloc = a.S->getBeginLoc();
           SourceLocation eloc = a.S->getEndLoc();
@@ -1332,7 +1335,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       
     }
 
-    //*v += 1;
+    *v += 1;
 
 
     if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(binOp->getRHS())){
