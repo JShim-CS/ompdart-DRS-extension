@@ -63,7 +63,7 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
   std::replace(tempS.begin(), tempS.end(), '.', '_');
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
-  //this->allVars[tempS] = true;
+  this->allVars[tempS] = true;
   if (inLastTargetRegion(VD->getLocation())) {
     LastKernel->recordPrivate(VD);
     return true;
@@ -140,7 +140,7 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
   std::replace(tempS.begin(), tempS.end(), '.', '_');
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
-  //this->allVars[tempS] = true;
+  this->allVars[tempS] = true;
   uint8_t AccessType;
   // Check to see if this value is read from the right hand side.
   if (BO->isCompoundAssignmentOp() || usedInStmt(BO->getRHS(), VD)) {

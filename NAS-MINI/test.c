@@ -327,7 +327,6 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     xi-direction flux differences                      
 c-------------------------------------------------------------------*/
-  //#pragma drd
   for (j = 1; j < grid_points[1]-1; j++) {
     eta = (double)j * dnym1;
     
@@ -687,7 +686,6 @@ c  the corner elements are not used, but it convenient (and faster)
 c  to compute the whole thing with a simple loop. Make sure those 
 c  values are nonzero by initializing the whole thing here. 
 c-------------------------------------------------------------------*/
-#pragma drd
   for (i = 0; i < IMAX; i++) {
     for (j = 0; j < IMAX; j++) {
       for (k = 0; k < IMAX; k++) {
@@ -752,12 +750,11 @@ c     west face
 c-------------------------------------------------------------------*/
   i = 0;
   xi = 0.0;
-#pragma omp for nowait
   for (j = 0; j < grid_points[1]; j++) {
     eta = (double)j * dnym1;
     for (k = 0; k < grid_points[2]; k++) {
       zeta = (double)k * dnzm1;
-      exact_solution(xi, eta, zeta, temp);
+      //exact_solution(xi, eta, zeta, temp);
       for (m = 0; m < 5; m++) {
 	u[i][j][k][m] = temp[m];
       }
@@ -885,7 +882,6 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     next, set all diagonal values to 1. This is overkill, but convenient
 c-------------------------------------------------------------------*/
-#pragma omp for  
   for (i = 0; i < grid_points[0]; i++) {
     for (j = 0; j < grid_points[1]; j++) {
       for (k = 0; k < grid_points[2]; k++) {
@@ -1301,7 +1297,6 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     now joacobians set, so form left hand side in y direction
 c-------------------------------------------------------------------*/
-#pragma omp for  
   for (i = 1; i < grid_points[0]-1; i++) {
     for (j = 1; j < grid_points[1]-1; j++) {
       for (k = 1; k < grid_points[2]-1; k++) {
@@ -1816,7 +1811,7 @@ c-------------------------------------------------------------------*/
 /*--------------------------------------------------------------------
 c     compute xi-direction fluxes 
 c-------------------------------------------------------------------*/
-#pragma omp for
+#pragma drd
   for (i = 1; i < grid_points[0]-1; i++) {
     for (j = 1; j < grid_points[1]-1; j++) {
       for (k = 1; k < grid_points[2]-1; k++) {

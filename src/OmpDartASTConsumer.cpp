@@ -385,10 +385,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
     for(AccessInfo a : ai){
       //v++;
-      llvm::outs()<<"DEBUG\n";
+      //llvm::outs()<<"DEBUG\n";
       if(stillSearching){
         if(a.Barrier == LoopBegin){
           parentFor.push_back(a);
+          //llvm::outs()<<parentFor.size()<<"\n";
         }else if(a.Barrier == LoopEnd){
           parentFor.pop_back();
         }
@@ -397,9 +398,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       //foundForLoop
       //llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
-     
-      if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
-       
+      
+      llvm::outs()<<"402\n";
+      //if(!(a.S))llvm::outs()<<*(this->drdPragmaLineNumber) + 1 <<"\n";
+      if(stillSearching && a.S && llvm::dyn_cast<ForStmt>(a.S) && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
+        llvm::outs()<<"404\n";
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
@@ -419,7 +422,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
             ForStmt* fspnc = const_cast<ForStmt*>(fsp);
             std::string loopVar2 = this->getLoopVariable(fspnc);
-            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,true);
+            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,false);
             str2.erase(std::remove_if(str2.begin(), str2.end(), ::isspace), str2.end());
             loopVar2LoopPred[loopVar2] = str2;
             diffIndex[loopVar2] = true;
@@ -429,10 +432,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
         continue;
       }
-     
+      llvm::outs()<<"433\n";
       if(!stillSearching && a.Barrier == LoopEnd)break;
-
+      llvm::outs()<<"435\n";
       if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
+        
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
         std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,false);
@@ -440,14 +444,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
         loopVar2LoopPred[loopVar] = str;
-        //inTheTargetLoopRegion = false;
         continue;
       }
 
       
-      
+      llvm::outs()<<"449\n";
       if(!stillSearching){
-
         if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           mostRecentControlRegion = a.S;
           //closestControlRegion = a.S;
