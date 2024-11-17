@@ -382,7 +382,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
     for(AccessInfo a : ai){
       //v++;
-      llvm::outs()<<v<<"\n";
+      //llvm::outs()<<v<<"\n";
       if(stillSearching){
         if(a.Barrier == LoopBegin){
           parentFor.push_back(a);
@@ -459,6 +459,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           v++;
+          llvm::outs()<<v<<"\n";
           bool invalid;
           SourceLocation bloc = a.S->getBeginLoc();
           SourceLocation eloc = a.S->getEndLoc();
@@ -1325,7 +1326,6 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
     }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(binOp->getLHS())){
       if(op == "="){
         this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,true,Encoded2Original);
-        
       }else{
         this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
         
@@ -1372,6 +1372,8 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
   }else if(const UnaryOperator *UOp = dyn_cast<UnaryOperator>(exp)){
     this->setArrayIndexEncoding(UOp->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
     
+  }else if(const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(exp)){
+    this->setArrayIndexEncoding(ice->getSubExpr(),v,indexV,controlCondition,false,Encoded2Original);
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
     this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
     
