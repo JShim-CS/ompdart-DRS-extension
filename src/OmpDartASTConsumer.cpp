@@ -337,6 +337,7 @@ std::string OmpDartASTConsumer::getLoopVariable(const ForStmt *fs){
   return ret;
 }
 void OmpDartASTConsumer::recordReadAndWrite(){
+  
   DataTracker *TargetFunction = NULL;
 
   //llvm::outs() << "INSIDE CONSUMER CLASS line num is set to: " << *(this->drdPragmaLineNumber) << "\n";
@@ -379,10 +380,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     //const Stmt* closestControlRegion;
     ForStmt* fs = NULL;
     std::vector<AccessInfo> parentFor;
+    std::stack<const DynTypedNodeList*> nodeStack;
+    std::stack<std::string> predicateStack;
 
     for(AccessInfo a : ai){
       //v++;
-      //llvm::outs()<<v<<"\n";
+      llvm::outs()<<"DEBUG\n";
       if(stillSearching){
         if(a.Barrier == LoopBegin){
           parentFor.push_back(a);
@@ -394,7 +397,9 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
       //foundForLoop
       //llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
+     
       if(stillSearching && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
+       
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
@@ -408,7 +413,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         //differentiableIndexList[loopVar] = {""};
         inTheTargetLoopRegion = true;
 
-       
+        
         //we need to get the loop info that surround the target loop
         for (AccessInfo aif : parentFor) {
           if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
@@ -424,7 +429,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
         continue;
       }
-      
+     
       if(!stillSearching && a.Barrier == LoopEnd)break;
 
       if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
@@ -477,8 +482,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           const auto &Parents = (CI->getASTContext()).getParents(DynTypedNode::create(*(a.S)));
           std::string condition = ""; 
           std::string requiredCondition = "";
-          std::stack<const DynTypedNodeList*> nodeStack;
-          std::stack<std::string> predicateStack;
+          // std::stack<const DynTypedNodeList*> nodeStack;
+          // std::stack<std::string> predicateStack;
           nodeStack.push(&Parents);
           const Stmt *elseIfStmt = NULL;
           const Stmt *firstPaernt = NULL;
