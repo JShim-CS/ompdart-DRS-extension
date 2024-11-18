@@ -148,7 +148,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 }
 
 
-std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,bool> &indexV,bool diff){
+std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,short> &indexV, short diff){
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();
@@ -367,7 +367,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::unordered_map<std::string,bool> writtenMap;
   std::vector<std::string> indexEncodings;
   //std::unordered_map<std::string, bool> indexVCanBeSame;
-  std::unordered_map<std::string, bool> indexV;
+  std::unordered_map<std::string, short> indexV;
 
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
@@ -406,7 +406,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
-        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,true);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,1); //0 diff off, 1 diff on, 2 needs to be same 
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
@@ -423,7 +423,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
           if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
             ForStmt* fspnc = const_cast<ForStmt*>(fsp);
             std::string loopVar2 = this->getLoopVariable(fspnc);
-            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,true);
+            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,2);
             str2.erase(std::remove_if(str2.begin(), str2.end(), ::isspace), str2.end());
             loopVar2LoopPred[loopVar2] = str2;
             diffIndex[loopVar2] = true;
@@ -440,7 +440,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
-        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,false);
+        std::string str = this->getConditionOfLoop(*fs,loopVar,indexV,0);
         //indexV.erase(std::remove_if(indexV.begin(), indexV.end(), ::isspace), indexV.end());
         str.erase(std::remove_if(str.begin(), str.end(), ::isspace), str.end());
         //predicate_string.push_back(str);
@@ -1063,7 +1063,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
           if((diffString[i].substr(0,diffString[i].find('_')) == diffString[j].substr(0,diffString[j].find('_')))
             && (this->diffRequiredMap.find(diffString[i]) != this->diffRequiredMap.end() &&  this->diffRequiredMap.find(diffString[j]) != this->diffRequiredMap.end() )){
-            outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+            if(this->diffRequiredMap[diffString[i]] == 1){
+              outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+            }else if(this->diffRequiredMap[diffString[i]] == 2){
+               outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
+            }
+           
           }
           
         }
@@ -1107,11 +1112,11 @@ bool OmpDartASTConsumer::isSingleVar(std::string condition){
          && condition.find("!=") == std::string::npos && condition != "False" && condition != "true" 
          && condition != "false");
 }
-std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int *v,  std::unordered_map<std::string, bool> &indexV){
+std::string OmpDartASTConsumer::setStringForRegion(const Expr *exp, int *v,  std::unordered_map<std::string, short> &indexV){
   return this->recursivelySetTheString(exp,v, indexV);
 }
 
-std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v, std::unordered_map<std::string, bool> &indexV){
+std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v, std::unordered_map<std::string, short> &indexV){
   if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     std::string right = this->recursivelySetTheString(binOp->getRHS(),v,indexV);
@@ -1220,7 +1225,7 @@ void OmpDartASTConsumer::separateStringBy(std::string st, char sep, std::vector<
   if(temp != "")vect.push_back(temp);
 }
 
-std::string OmpDartASTConsumer::getArrayNameAndIndices(const ArraySubscriptExpr *arrayExpr, int *v, std::unordered_map<std::string, bool> &indexV){
+std::string OmpDartASTConsumer::getArrayNameAndIndices(const ArraySubscriptExpr *arrayExpr, int *v, std::unordered_map<std::string, short> &indexV){
   bool invalid; //is this even needed??
   std::vector<std::string> indices;
   int dimension = 1;
@@ -1271,7 +1276,7 @@ std::string OmpDartASTConsumer::getArrayNameAndIndices(const ArraySubscriptExpr 
 }
 
 //we need to update this method to support multiple arrays
-void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, bool> &indexV, const std::string controlCondition, bool isWrite, std::unordered_map<std::string,std::string> &Encoded2Original){
+void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::unordered_map<std::string, short> &indexV, const std::string controlCondition, bool isWrite, std::unordered_map<std::string,std::string> &Encoded2Original){
    if(const BinaryOperator *binOp = dyn_cast<BinaryOperator>(exp)){
     std::string op = binOp->getOpcodeStr().str();
     //llvm::outs() << "\nOOOPPPS: " << op <<"\n";
@@ -1302,7 +1307,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         for(auto lv : indexV){
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
           if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
+            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
           }
           this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
@@ -1320,7 +1325,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
           this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
           if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
+            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
           }
           
           //loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
@@ -1361,7 +1366,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
         this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
         Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
         if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
+            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
         }
       }
       std::string srr = sr.str();
@@ -1402,7 +1407,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
           this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
           if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
+            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
           }
         }
         std::string srr = sr.str();
@@ -1416,7 +1421,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
           this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = false;
           Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
           if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
+            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
           }
         }
         std::string srr = sr.str();

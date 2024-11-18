@@ -45,7 +45,7 @@ Input File,Result
 /programming/bench-drd/DRB093-doall2-collapse-orig-no.c,false
 /programming/bench-drd/DRB007-indirectaccess3-orig-yes.c,false
 /programming/bench-drd/DRB053-inneronly1-orig-no.c,false
-/programming/bench-drd/DRB037-truedepseconddimension-orig-yes.c,false
+/programming/bench-drd/DRB037-truedepseconddimension-orig-yes.c,true
 /programming/bench-drd/DRB036-truedepscalar-var-yes.c,false
 /programming/bench-drd/DRB030-truedep1-var-yes.c,true
 /programming/bench-drd/DRB203-simd-broadcast-no.c,false
@@ -55,8 +55,8 @@ Input File,Result
 /programming/bench-drd/DRB047-doallchar-orig-no.c,false
 /programming/bench-drd/DRB040-truedepsingleelement-var-yes.c,true
 /programming/bench-drd/DRB060-matrixmultiply-orig-no.c,false
-/programming/bench-drd/DRB054-inneronly2-orig-no.c,true
-/programming/bench-drd/DRB038-truedepseconddimension-var-yes.c,false
+/programming/bench-drd/DRB054-inneronly2-orig-no.c,false
+/programming/bench-drd/DRB038-truedepseconddimension-var-yes.c,true
 /programming/bench-drd/DRB033-truedeplinear-orig-yes.c,true
 /programming/bench-drd/DRB062-matrixvector2-orig-no.c,false
 /programming/bench-drd/DRB066-pointernoaliasing-orig-no.c,false
