@@ -399,10 +399,10 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       //foundForLoop
       //llvm::outs()<<"EXECUTED44: " << (*SM).getSpellingLineNumber(a.S->getBeginLoc()) <<"\n";
       
-      llvm::outs()<<"402\n";
+      //llvm::outs()<<"402\n";
       //if(!(a.S))llvm::outs()<<*(this->drdPragmaLineNumber) + 1 <<"\n";
       if(stillSearching && a.S && llvm::dyn_cast<ForStmt>(a.S) && (*SM).getSpellingLineNumber(a.S->getBeginLoc()) == *(this->drdPragmaLineNumber) + 1){
-        llvm::outs()<<"404\n";
+        //llvm::outs()<<"404\n";
         stillSearching = false;
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
         std::string loopVar = this->getLoopVariable(fs);
@@ -432,9 +432,9 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         }
         continue;
       }
-      llvm::outs()<<"433\n";
+      //llvm::outs()<<"433\n";
       if(!stillSearching && a.Barrier == LoopEnd)break;
-      llvm::outs()<<"435\n";
+      //llvm::outs()<<"435\n";
       if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
         
         fs = const_cast<ForStmt* >(llvm::dyn_cast<ForStmt>(a.S));
@@ -448,7 +448,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       }
 
       
-      llvm::outs()<<"449\n";
+      //llvm::outs()<<"449\n";
       if(!stillSearching){
         if(a.Barrier == CondBegin || a.Barrier == CondCase || a.Barrier == CondFallback){
           mostRecentControlRegion = a.S;
@@ -466,7 +466,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
         if(a.Flags == A_WRONLY || a.Flags == A_RDWR || a.Flags == A_RDONLY){
           v++;
-          llvm::outs()<<v<<"\n";
+          //llvm::outs()<<v<<"\n";
           bool invalid;
           SourceLocation bloc = a.S->getBeginLoc();
           SourceLocation eloc = a.S->getEndLoc();
