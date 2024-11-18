@@ -166,6 +166,8 @@ def run_sh_and_log_results(c_path, sh_script, output_csv):
                     csv_writer.writerow([c_file, "fail"])
 
                 print(f"Processed: {c_file}")
+                result.stdout = ""
+                result.stderr = ""
 
             except Exception as e:
                 # Handle any unexpected errors
