@@ -555,16 +555,16 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             //llvm::outs() <<  "(" << exp <<" requires: ";
             this->setArrayIndexEncoding(a.S,&v,indexV,requiredCondition,false,Encoded2Original);
             //llvm::outs() << requiredCondition << " ) ";
-            if(a.ArraySubscript){
-              const Expr *base = a.ArraySubscript->getBase();
-              bloc = base->getBeginLoc();
-              eloc = base->getEndLoc();
-              arrRange = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
-              sr = Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
-              llvm::outs() << "array name is: " << sr.str() <<" ";
+            // if(a.ArraySubscript){
+            //   const Expr *base = a.ArraySubscript->getBase();
+            //   bloc = base->getBeginLoc();
+            //   eloc = base->getEndLoc();
+            //   arrRange = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
+            //   sr = Lexer::getSourceText(arrRange,*SM,(*CI).getLangOpts(),&invalid);
+            //   llvm::outs() << "array name is: " << sr.str() <<" ";
               
-            }
-            llvm::outs() << "\n";
+            // }
+            // llvm::outs() << "\n";
             //v++;
            
             
@@ -1000,6 +1000,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       for (int j = 0; j < readVector.size(); j++){
        
         if(writeVector[i]->at(0) != readVector[j]->at(0))continue;
+        
         
         //if(readVector[j]->at(2) != writeVector[i]->at(2))continue;
         
