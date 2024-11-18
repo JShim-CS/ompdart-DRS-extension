@@ -419,10 +419,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         
         //we need to get the loop info that surround the target loop
         for (AccessInfo aif : parentFor) {
+          if(a.S == aif.S)continue;
           if(const ForStmt* fsp = dyn_cast<ForStmt>(aif.S)){
             ForStmt* fspnc = const_cast<ForStmt*>(fsp);
             std::string loopVar2 = this->getLoopVariable(fspnc);
-            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,false);
+            std::string str2 = this->getConditionOfLoop(*fspnc,loopVar2,indexV,true);
             str2.erase(std::remove_if(str2.begin(), str2.end(), ::isspace), str2.end());
             loopVar2LoopPred[loopVar2] = str2;
             diffIndex[loopVar2] = true;

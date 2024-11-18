@@ -182,3 +182,43 @@ output_csv_path = "./drsBench.csv"
 
 run_sh_and_log_results(c_files_path, run_sh_script, output_csv_path)
 
+
+
+with open("drsBench.csv",'r') as f:
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
+    fails = 0
+    counter = 0
+    yes = 0
+    no = 0
+    for r in f:
+        if counter != 0:
+            cols = r.split(",")
+            if "simd" in cols[0]:
+                continue
+
+            if "yes" in cols[0] and "true" in cols[1]:
+                yes +=1
+                tp += 1
+            elif "no" in cols[0] and "true" in cols[1]:
+                no += 1
+                fp += 1
+            elif "no" in cols[0] and "false" in cols[1]:
+                no += 1
+                tn += 1
+            elif "yes" in cols[0] and "false" in cols[1]:
+                yes +=1
+                fn += 1
+            else:
+                fails += 1
+        counter += 1
+    print(f"true positives {tp}")
+    print(f"false positives {fp}")
+    print(f"true negatives {tn}")
+    print(f"false negatives {fn}")
+    print(f"fails {fails}")
+    print(f"yes {yes}")
+    print(f"no {no}")
+    print(f"# files {counter-1}")
