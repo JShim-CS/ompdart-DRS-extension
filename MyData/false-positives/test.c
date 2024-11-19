@@ -53,8 +53,9 @@ void fp3(){
 
 void fp4(){
     int size = 100;
-    int a = N;
-    int b = 0;
+    const int a = N;
+    const int b = 0;
+    size = 10;
     int arr[size];
 
     #pragma omp parallel for

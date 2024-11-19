@@ -149,6 +149,7 @@ void OmpDartASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 
 
 std::string OmpDartASTConsumer::getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,short> &indexV, short diff){
+    Visitor->allVars[indexVar] = "!";
     Stmt *init = FS.getInit();
     Expr *inc = FS.getInc();
     Expr *cond = FS.getCond();

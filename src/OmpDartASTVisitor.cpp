@@ -64,14 +64,14 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
   QualType QT = VD->getType();
-  if(this->allVars.find(tempS) == this->allVars.end()){ //quick fix
+
+    //philosophy: get the most recent value
     if (Expr *Init = VD->getInit()) {
-      if(QT.isConstQualified()){
-        if (IntegerLiteral *IL = dyn_cast<IntegerLiteral>(Init)) {
+        if(IntegerLiteral *IL = dyn_cast<IntegerLiteral>(Init)){
           int val = IL->getValue().getSExtValue();
           this->allVars[tempS] = std::to_string(val);
-          //llvm::outs()<<tempS << " = " << val << ", line 83\n";
-        }else{ //const but not int
+          //llvm::outs()<< "wrote " + tempS + " as " << val <<"\n"; 
+        }else{ //not int
           SourceRange range = Init->getSourceRange();
           SourceLocation sLoc = range.getBegin();
           SourceLocation eLoc = range.getEnd();
@@ -80,25 +80,17 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
           rhs = rhs.substr(rhs.find('=')+1);
           rhs = rhs.substr(0,rhs.find(';'));
           rhs.erase(std::remove_if(rhs.begin(), rhs.end(), ::isspace), rhs.end());
-          if(this->macros->find(rhs) != this->macros->end()){
+          if(this->macros->find(rhs) != this->macros->end()){ //has matching macro
             this->allVars[tempS] = rhs;
-            //llvm::outs()<<tempS << " = " << rhs << ", line 85\n";
           }else{
             this->allVars[tempS] = "!";
-            //llvm::outs()<<tempS << " = " << rhs << ", line 88\n";
           }
         }
-        
-      }else{//not const, subject to change
-        llvm::outs()<<tempS << " = !, line 90\n";
-      }
-      
-    }else{ //doesn't have init
+    }else{
       this->allVars[tempS] = "!";
-      //llvm::outs()<<tempS << " = !, line 98\n";
-
     }
-  }
+      
+  
   if (inLastTargetRegion(VD->getLocation())) {
     LastKernel->recordPrivate(VD);
     return true;
@@ -177,10 +169,13 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
   if(tempS == "class")tempS = "_class";
 
   std::string operation = BO->getOpcodeStr().str();
+  operation.erase(std::remove_if(operation.begin(), operation.end(), ::isspace), operation.end());
   if(this->allVars.find(tempS) == this->allVars.end()){
     this->allVars[tempS] = "!";
-    //llvm::outs()<<tempS << " = !, line 174\n";
-  }// If it exists, do nothing about it. The const values are set just one time
+  }else if(operation == "+=" || operation == "=" || operation == "-=" || operation == "*=" || operation == "/="){
+    llvm::outs() << tempS <<"   " << operation <<"\n";
+    this->allVars[tempS] = "!";
+  }
 
   
   uint8_t AccessType;
@@ -210,6 +205,23 @@ bool OmpDartASTVisitor::VisitUnaryOperator(UnaryOperator *UO) {
   const ValueDecl *VD = DRE->getDecl();
 
   LastFunction->recordAccess(VD, DRE->getLocation(), UO, A_RDWR, true);
+
+  UnaryOperator::Opcode uop = UO->getOpcode();
+
+  const Expr *e = UO->getSubExpr();
+  if(const DeclRefExpr *dre = dyn_cast<DeclRefExpr>(e)){
+    const ValueDecl *decl = dre->getDecl();
+    std::string var = decl->getNameAsString();
+    var.erase(std::remove_if(var.begin(), var.end(), ::isspace), var.end());
+    if(this->allVars.find(var) != this->allVars.end()){
+      if(uop == UO_PreInc || uop == UO_PostInc || uop == UO_PreDec || uop == UO_PostDec){
+        this->allVars[var] = "!";
+      }
+    }else{
+      this->allVars[var] = "!";
+    }
+  }
+  
   return true;
 }
 
