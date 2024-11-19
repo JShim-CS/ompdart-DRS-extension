@@ -58,6 +58,7 @@ void fp4(){
     int arr[size];
 
     #pragma omp parallel for
+    #pragma drd
     for(int i = 0; i < 10; i++){
         if(a){
             arr[i] = arr[i] + 1;

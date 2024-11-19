@@ -29,7 +29,7 @@ OmpDartASTConsumer::OmpDartASTConsumer(CompilerInstance *CI,
                                        const std::string *OutFilePath,
                                        bool Aggressive, unsigned* drdPragmaLineNumber, std::unordered_map<std::string, std::string> *macros)
     : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())),
-      Visitor(new OmpDartASTVisitor(CI,drdPragmaLineNumber)),
+      Visitor(new OmpDartASTVisitor(CI,drdPragmaLineNumber,macros)),
       FunctionTrackers(Visitor->getFunctionTrackers()),
       Kernels(Visitor->getTargetRegions()), drdPragmaLineNumber(drdPragmaLineNumber), macros(macros) {
   TheRewriter.setSourceMgr(*SM, Context->getLangOpts());
@@ -599,6 +599,9 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     outfile << "solver=Solver()\n";
     for (const auto &pair : Visitor->allVars) {
       outfile << pair.first + " = " + "Int(\""+pair.first+"\")\n";
+      if(pair.second != "!"){
+        outfile << "solver.add(" + pair.first + " == " + pair.second +")\n"; 
+      }
     }
     outfile<< "DRD_RANDOM_VAR = Int(\"DRD_RANDOM_VAR\")\n";
     for(const auto &pair : *macros){

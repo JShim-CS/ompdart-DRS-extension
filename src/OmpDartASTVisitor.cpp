@@ -5,15 +5,15 @@
 //added by Junhyung Shim
 #include "clang/Frontend/FrontendAction.h" //for Lexer
 
-
 #include "CommonUtils.h"
 #include <functional> 
 
 
 using namespace clang;
 
-OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber)
-    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), drdPragmaLineNumber(drdPragmaLineNumber) {
+OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber, std::unordered_map<std::string, std::string> *macros)
+    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), 
+    drdPragmaLineNumber(drdPragmaLineNumber), macros(macros) {
   LastKernel = NULL;
   LastFunction = NULL;
   //this->CR = std::make_unique<ControlRegions>().get();
@@ -63,7 +63,42 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
   std::replace(tempS.begin(), tempS.end(), '.', '_');
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
-  this->allVars[tempS] = true;
+  QualType QT = VD->getType();
+  if(this->allVars.find(tempS) == this->allVars.end()){ //quick fix
+    if (Expr *Init = VD->getInit()) {
+      if(QT.isConstQualified()){
+        if (IntegerLiteral *IL = dyn_cast<IntegerLiteral>(Init)) {
+          int val = IL->getValue().getSExtValue();
+          this->allVars[tempS] = std::to_string(val);
+          llvm::outs()<<tempS << " = " << val << ", line 83\n";
+        }else{ //const but not int
+          SourceRange range = Init->getSourceRange();
+          SourceLocation sLoc = range.getBegin();
+          SourceLocation eLoc = range.getEnd();
+          StringRef text = Lexer::getSourceText(CharSourceRange::getCharRange(sLoc,eLoc),*SM,LangOptions());
+          std::string rhs = text.str();
+          rhs = rhs.substr(rhs.find('=')+1);
+          rhs = rhs.substr(0,rhs.find(';'));
+          rhs.erase(std::remove_if(rhs.begin(), rhs.end(), ::isspace), rhs.end());
+          if(this->macros->find(rhs) != this->macros->end()){
+            this->allVars[tempS] = rhs;
+            llvm::outs()<<tempS << " = " << rhs << ", line 85\n";
+          }else{
+            this->allVars[tempS] = "!";
+            llvm::outs()<<tempS << " = " << rhs << ", line 88\n";
+          }
+        }
+        
+      }else{//not const, subject to change
+        llvm::outs()<<tempS << " = !, line 90\n";
+      }
+      
+    }else{ //doesn't have init
+      this->allVars[tempS] = "!";
+      llvm::outs()<<tempS << " = !, line 98\n";
+
+    }
+  }
   if (inLastTargetRegion(VD->getLocation())) {
     LastKernel->recordPrivate(VD);
     return true;
@@ -140,7 +175,14 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
   std::replace(tempS.begin(), tempS.end(), '.', '_');
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
-  this->allVars[tempS] = true;
+
+  std::string operation = BO->getOpcodeStr().str();
+  if(this->allVars.find(tempS) == this->allVars.end()){
+    this->allVars[tempS] = "!";
+    llvm::outs()<<tempS << " = !, line 174\n";
+  }// If it exists, do nothing about it. The const values are set just one time
+
+  
   uint8_t AccessType;
   // Check to see if this value is read from the right hand side.
   if (BO->isCompoundAssignmentOp() || usedInStmt(BO->getRHS(), VD)) {

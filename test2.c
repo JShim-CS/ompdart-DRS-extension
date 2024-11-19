@@ -53,11 +53,12 @@ void fp3(){
 
 void fp4(){
     int size = 100;
-    int a = N;
-    int b = 0;
+    const int a = N;
+    const int b = 0;
     int arr[size];
 
     #pragma omp parallel for
+    #pragma drd
     for(int i = 0; i < 10; i++){
         if(a){
             arr[i] = arr[i] + 1;
@@ -96,7 +97,6 @@ void fp6(){
     int arr[size];
 
     #pragma omp parallel for
-    #pragma drd
     for(int i = 0; i < N; i++){
         if(a == 0 && b != N){
             arr[i] = arr[i] + 1;
