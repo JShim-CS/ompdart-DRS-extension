@@ -70,7 +70,7 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
         if (IntegerLiteral *IL = dyn_cast<IntegerLiteral>(Init)) {
           int val = IL->getValue().getSExtValue();
           this->allVars[tempS] = std::to_string(val);
-          llvm::outs()<<tempS << " = " << val << ", line 83\n";
+          //llvm::outs()<<tempS << " = " << val << ", line 83\n";
         }else{ //const but not int
           SourceRange range = Init->getSourceRange();
           SourceLocation sLoc = range.getBegin();
@@ -82,10 +82,10 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
           rhs.erase(std::remove_if(rhs.begin(), rhs.end(), ::isspace), rhs.end());
           if(this->macros->find(rhs) != this->macros->end()){
             this->allVars[tempS] = rhs;
-            llvm::outs()<<tempS << " = " << rhs << ", line 85\n";
+            //llvm::outs()<<tempS << " = " << rhs << ", line 85\n";
           }else{
             this->allVars[tempS] = "!";
-            llvm::outs()<<tempS << " = " << rhs << ", line 88\n";
+            //llvm::outs()<<tempS << " = " << rhs << ", line 88\n";
           }
         }
         
@@ -95,7 +95,7 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
       
     }else{ //doesn't have init
       this->allVars[tempS] = "!";
-      llvm::outs()<<tempS << " = !, line 98\n";
+      //llvm::outs()<<tempS << " = !, line 98\n";
 
     }
   }
@@ -179,7 +179,7 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
   std::string operation = BO->getOpcodeStr().str();
   if(this->allVars.find(tempS) == this->allVars.end()){
     this->allVars[tempS] = "!";
-    llvm::outs()<<tempS << " = !, line 174\n";
+    //llvm::outs()<<tempS << " = !, line 174\n";
   }// If it exists, do nothing about it. The const values are set just one time
 
   
