@@ -35,7 +35,7 @@ private:
 
 public:
   
-  std::unordered_map<std::string,bool> allVars;
+  std::unordered_map<std::string,int> allVars;
   explicit OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber);
 
   std::vector<DataTracker *> &getFunctionTrackers();

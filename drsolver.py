@@ -1,0 +1,53 @@
+from z3 import *
+solver=Solver()
+argv = Int("argv")
+argc = Int("argc")
+j = Int("j")
+i = Int("i")
+b = Int("b")
+arr = Int("arr")
+a = Int("a")
+size = Int("size")
+DRD_RANDOM_VAR = Int("DRD_RANDOM_VAR")
+N = Int("N")
+solver.add(N == 100)
+wr_arr_index_0_0 = Int("wr_arr_index_0_0")
+i_drdVar_13 = Int("i_drdVar_13")
+solver.add((i_drdVar_13>=0),(i_drdVar_13<N))
+i_drdVar_12 = Int("i_drdVar_12")
+solver.add((i_drdVar_12>=0),(i_drdVar_12<N))
+i_drdVar_7 = Int("i_drdVar_7")
+solver.add((i_drdVar_7>=0),(i_drdVar_7<N))
+i_drdVar_6 = Int("i_drdVar_6")
+solver.add((i_drdVar_6>=0),(i_drdVar_6<N))
+wr_cond_0_0 = And (wr_arr_index_0_0 == i_drdVar_12, (And(a==0,b!=N)))
+wr_arr_index_1_0 = Int("wr_arr_index_1_0")
+wr_cond_1_0 = And (wr_arr_index_1_0 == i_drdVar_6, (And(a==0,b!=N)))
+waw_cond_0 = And( wr_cond_0_0, wr_cond_1_0,
+(wr_arr_index_0_0 == wr_arr_index_1_0))
+waws = Or(waw_cond_0)
+
+r_arr_index_0_0 = Int("r_arr_index_0_0")
+r_cond_0_0 = And (r_arr_index_0_0 == i_drdVar_13 + 1, (And(a==0,b!=N)))
+r_arr_index_1_0 = Int("r_arr_index_1_0")
+r_cond_1_0 = And (r_arr_index_1_0 == i_drdVar_7, (And(a==0,b!=N)))
+raw_cond_0= And( wr_cond_0_0, r_cond_0_0,
+(wr_arr_index_0_0 == r_arr_index_0_0))
+raw_cond_1= And( wr_cond_0_0, r_cond_1_0,
+(wr_arr_index_0_0 == r_arr_index_1_0))
+raw_cond_2= And( wr_cond_1_0, r_cond_0_0,
+(wr_arr_index_1_0 == r_arr_index_0_0))
+raw_cond_3= And( wr_cond_1_0, r_cond_1_0,
+(wr_arr_index_1_0 == r_arr_index_1_0))
+raws = Or(raw_cond_3, raw_cond_2, raw_cond_1, raw_cond_0)
+solver.add(i_drdVar_13 != i_drdVar_12)
+solver.add(i_drdVar_13 != i_drdVar_6)
+solver.add(i_drdVar_12 != i_drdVar_7)
+solver.add(i_drdVar_12 != i_drdVar_6)
+solver.add(i_drdVar_7 != i_drdVar_6)
+cstrnts = Or(waws,raws)
+solver.add(cstrnts)
+if solver.check() == z3.sat:
+	print("seems like data race(waw/raw/war) exists within the loop!")
+else:
+	print("seems like no data race exists (please double check)")
