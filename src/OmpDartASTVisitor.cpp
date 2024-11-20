@@ -71,6 +71,8 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
           int val = IL->getValue().getSExtValue();
           if(SM->isInMainFile(VD->getLocation()) && loc < *drdPragmaLineNumber){
             this->allVars[tempS] = std::to_string(val);
+          }else if(this->allVars.find(tempS) == this->allVars.end()){
+             this->allVars[tempS] = "!";
           }
           
         }else{ //not int
@@ -89,14 +91,13 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
             }else{
               this->allVars[tempS] = "!";
             } 
+          }else if(this->allVars.find(tempS) == this->allVars.end()){
+            this->allVars[tempS] = "!";
           }
           
         }
     }else{
-      if(SM->isInMainFile(VD->getLocation()) && loc < *drdPragmaLineNumber){
-        this->allVars[tempS] = "!";  
-      }
-      
+      this->allVars[tempS] = "!";
     }
       
   
@@ -222,14 +223,20 @@ bool OmpDartASTVisitor::VisitUnaryOperator(UnaryOperator *UO) {
 
   const Expr *e = UO->getSubExpr();
   if(const DeclRefExpr *dre = dyn_cast<DeclRefExpr>(e)){
-    const ValueDecl *decl = dre->getDecl();
+    const ValueDecl *decl = DRE->getDecl();
     std::string var = decl->getNameAsString();
     var.erase(std::remove_if(var.begin(), var.end(), ::isspace), var.end());
-    if(this->allVars.find(var) != this->allVars.end()){
-      if(uop == UO_PreInc || uop == UO_PostInc || uop == UO_PreDec || uop == UO_PostDec){
+
+    unsigned loc = SM->getPresumedLineNumber(DRE->getBeginLoc());
+    if(SM->isInMainFile(DRE->getLocation()) && loc < *drdPragmaLineNumber){
+      if(this->allVars.find(var) != this->allVars.end()){
+        if(uop == UO_PreInc || uop == UO_PostInc || uop == UO_PreDec || uop == UO_PostDec){
+          this->allVars[var] = "!";
+        }
+      }else{
         this->allVars[var] = "!";
       }
-    }else{
+    }else if(this->allVars.find(var) != this->allVars.end()){
       this->allVars[var] = "!";
     }
   }
