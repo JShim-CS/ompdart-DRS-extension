@@ -64,13 +64,15 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
   std::replace(tempS.begin(), tempS.end(), ' ', '_');
   if(tempS == "class")tempS = "_class";
   QualType QT = VD->getType();
-
+  unsigned loc = SM->getPresumedLineNumber(VD->getBeginLoc());
     //philosophy: get the most recent value
     if (Expr *Init = VD->getInit()) {
         if(IntegerLiteral *IL = dyn_cast<IntegerLiteral>(Init)){
           int val = IL->getValue().getSExtValue();
-          this->allVars[tempS] = std::to_string(val);
-          //llvm::outs()<< "wrote " + tempS + " as " << val <<"\n"; 
+          if(SM->isInMainFile(VD->getLocation()) && loc < *drdPragmaLineNumber){
+            this->allVars[tempS] = std::to_string(val);
+          }
+          
         }else{ //not int
           SourceRange range = Init->getSourceRange();
           SourceLocation sLoc = range.getBegin();
@@ -80,14 +82,21 @@ bool OmpDartASTVisitor::VisitVarDecl(VarDecl *VD) {
           rhs = rhs.substr(rhs.find('=')+1);
           rhs = rhs.substr(0,rhs.find(';'));
           rhs.erase(std::remove_if(rhs.begin(), rhs.end(), ::isspace), rhs.end());
-          if(this->macros->find(rhs) != this->macros->end()){ //has matching macro
-            this->allVars[tempS] = rhs;
-          }else{
-            this->allVars[tempS] = "!";
+
+          if(SM->isInMainFile(VD->getLocation()) && loc < *drdPragmaLineNumber){
+            if(this->macros->find(rhs) != this->macros->end()){ //has matching macro
+              this->allVars[tempS] = rhs;
+            }else{
+              this->allVars[tempS] = "!";
+            } 
           }
+          
         }
     }else{
-      this->allVars[tempS] = "!";
+      if(SM->isInMainFile(VD->getLocation()) && loc < *drdPragmaLineNumber){
+        this->allVars[tempS] = "!";  
+      }
+      
     }
       
   
@@ -170,11 +179,14 @@ bool OmpDartASTVisitor::VisitBinaryOperator(BinaryOperator *BO) {
 
   std::string operation = BO->getOpcodeStr().str();
   operation.erase(std::remove_if(operation.begin(), operation.end(), ::isspace), operation.end());
-  if(this->allVars.find(tempS) == this->allVars.end()){
-    this->allVars[tempS] = "!";
-  }else if(operation == "+=" || operation == "=" || operation == "-=" || operation == "*=" || operation == "/="){
-    llvm::outs() << tempS <<"   " << operation <<"\n";
-    this->allVars[tempS] = "!";
+   unsigned loc = SM->getPresumedLineNumber(DRE->getBeginLoc());
+  if(SM->isInMainFile(DRE->getLocation()) && loc < *drdPragmaLineNumber){
+    if(this->allVars.find(tempS) == this->allVars.end()){
+      this->allVars[tempS] = "!";
+    }else if(operation == "+=" || operation == "=" || operation == "-=" || operation == "*=" || operation == "/="){
+      llvm::outs() << tempS <<"   " << operation <<"\n";
+      this->allVars[tempS] = "!";
+    }
   }
 
   
