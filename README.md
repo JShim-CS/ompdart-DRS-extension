@@ -1,7 +1,7 @@
 # ompdart_extension
 extension of https://github.com/lmarzen/ompdart to detect data race
 
-#switch to branch 'extension'
+# switch to branch 'extension'
 
 # Data race detection support
 Currently, DRS only supports data race detection on one target loop.
