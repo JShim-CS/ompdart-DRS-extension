@@ -13,7 +13,7 @@ Future work will remove '#pragma drd' and do the analysis based on the OpenMP co
 
 
 
-#Requirements
+# Requirements
 1. OMPDart requirements
 2. Python 3.8.10 (tested)
 3. Z3 Python (4.13.2, but may work with other versions)
