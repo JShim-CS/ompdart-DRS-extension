@@ -61,7 +61,7 @@ Input File,Result
 /programming/bench-drd/DRB062-matrixvector2-orig-no.c,false
 /programming/bench-drd/DRB066-pointernoaliasing-orig-no.c,false
 /programming/bench-drd/DRB068-restrictpointer2-orig-no.c,false
-/programming/bench-drd/DRB004-antidep2-var-yes.c,false
+/programming/bench-drd/DRB004-antidep2-var-yes.c,true
 /programming/bench-drd/DRB178-input-dependence-var-yes.c,true
 /programming/bench-drd/DRB001-antidep1-orig-yes.c,true
 /programming/bench-drd/DRB063-outeronly1-orig-no.c,false
@@ -83,7 +83,7 @@ Input File,Result
 /programming/bench-drd/DRB059-lastprivate-orig-no.c,false
 /programming/bench-drd/DRB039-truedepsingleelement-orig-yes.c,true
 /programming/bench-drd/DRB025-simdtruedep-var-yes.c,true
-/programming/bench-drd/DRB003-antidep2-orig-yes.c,false
+/programming/bench-drd/DRB003-antidep2-orig-yes.c,true
 /programming/bench-drd/DRB206-simd-scatter-yes.c,true
 /programming/bench-drd/DRB050-functionparameter-orig-no.c,false
 /programming/bench-drd/DRB024-simdtruedep-orig-yes.c,true
