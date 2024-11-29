@@ -185,12 +185,12 @@ int main(int argc, char* argv[]){
     int arr[10];
 
     //#pragma omp for
-    #pragma drd
+    #pragma drs
     for (i = arr[2]; i < arr[0]; i++) {
         for (j = 1; j < b; j++) {
             for (k = 1; k < c; k++) {
                 for (m = 0; m < 5; m++) {
-                    u[i][j][k][m] += u[i-1][j][k][m];
+                    u[i][j][k][m] = u[i-1][j][k][m];
                 }
             }
         }
