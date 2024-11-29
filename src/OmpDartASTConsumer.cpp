@@ -1305,7 +1305,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
       StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
       std::string wr = this->getArrayNameAndIndices(arrayExpr,v,indexV);
       //wr = wr.find('[') == std::string::npos ? wr : "DRD_RANDOM_VAR";
-      if(op == "="){
+      if(op == "=" || op == "+=" || op == "-=" || op == "/=" || op == "*=" || op == "%="){
         //name |index | loopVar | condition
         std::string loopVar = "";
         for(auto lv : indexV){
@@ -1398,56 +1398,7 @@ void OmpDartASTConsumer::setArrayIndexEncoding(const Stmt *exp, int *v, std::uno
   }else if(const ParenExpr *Pop = dyn_cast<ParenExpr>(exp)){
     this->setArrayIndexEncoding(Pop->getSubExpr(), v, indexV,controlCondition,false,Encoded2Original);
   
-  }else if(const CompoundAssignOperator *cao = dyn_cast<CompoundAssignOperator>(exp)){ //for +=, -=, ..
-    std::string op = cao->getOpcodeStr().str();
-    //llvm::outs() << "\nOOOPPPS: " << op <<"\n";
-    std::string realCondition = controlCondition;
-    //if the value cannot be determined, then mark it as true
-    realCondition = realCondition.find('[') == std::string::npos ? realCondition : "True";
-    //assume that the code is well-formatted
-    if(controlCondition.find(" = ") != std::string::npos){ //control statement has assignment op as well
-      //for over-approximation we set all assignment in the control statement predicate as true
-      //if(a[i] = v){a[i+2]=0;} --> this could lead to datarace regardless of what the value of v is
-      realCondition = "True";
-    }
-    
-    realCondition = this->replaceTildeWithNum(realCondition,*v);
-    //check for write (left side) first
-    if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(cao->getLHS())){
-      int indexPos = 0;
-      const Expr *base = arrayExpr->getBase();
-      SourceLocation bloc = base->getBeginLoc();
-      SourceLocation eloc = base->getEndLoc();
-      CharSourceRange arrayName = CharSourceRange::getTokenRange(bloc,eloc); // this time, arrRange gets the name of the array
-      bool invalid; //is this even needed??
-      StringRef sr  = Lexer::getSourceText(arrayName,*SM,(*CI).getLangOpts(),&invalid);
-      std::string wr = this->getArrayNameAndIndices(arrayExpr,v,indexV);
-      //wr = wr.find('[') == std::string::npos ? wr : "DRD_RANDOM_VAR";
-      if(op == "+=" || op == "-=" || op == "*=" || op == "/=" || op == "%="){
-        //name |index | loopVar | condition
-        std::string loopVar = "";
-        for(auto lv : indexV){
-          Encoded2Original[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.first;
-          if(lv.second){
-            this->diffRequiredMap[(lv.first+"_drdVar_"+std::to_string(*v))] = lv.second;
-          }
-          this->encodedWriteOrRead[(lv.first+"_drdVar_"+std::to_string(*v))] = true;
-          loopVar = loopVar + "$" + (lv.first+"_drdVar_"+std::to_string(*v));
-        }
-        //llvm::outs()<< "!%^&" << this->getArrayNameAndIndices(arrayExpr,v,indexV) <<"!%^&\n";
-        //exit(0);
-        std::string srr = sr.str();
-        srr = srr.substr(0,srr.find('['));
-        srr.erase(std::remove_if(srr.begin(), srr.end(), ::isspace), srr.end());
-        wr = this->replaceTildeWithNum(wr,*v);
-        this->writeMap[srr+"|"+wr+"|"+ loopVar+"|"+realCondition] = true;
-        
-      }
-    }
-    llvm::outs() <<"EXECUTED!!!\n";
-    *v += 1;
-
-  }else if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
+ }else if(const ArraySubscriptExpr *arrayExpr = dyn_cast<ArraySubscriptExpr>(exp)){
       int indexPos = 0;
       const Expr *base = arrayExpr->getBase();
       SourceLocation bloc = base->getBeginLoc();
