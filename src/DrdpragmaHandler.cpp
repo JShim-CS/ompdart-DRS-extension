@@ -10,7 +10,7 @@ void DrdpragmaHandler::HandlePragma(Preprocessor &PP, PragmaIntroducer Introduce
     SourceManager &SM = PP.getSourceManager();
     unsigned pragmaLine = SM.getSpellingLineNumber(Token.getLocation());
     *lineNumber = pragmaLine;
-    llvm::outs() << "Encountered #pragma drd on line: " << *lineNumber << "\n";
+    llvm::outs() << "Encountered #pragma drs on line: " << *lineNumber << "\n";
     this->found = true;
     PP.Lex(Token);
 }
