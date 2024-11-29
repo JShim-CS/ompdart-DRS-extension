@@ -44,31 +44,38 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
-Matrix-vector multiplication: outer-level loop parallelization
+/* 
+The outmost loop is parallelized.
+But the inner level loop has out of bound access for b[i][j] when j equals to 0.
+This will case memory access of a previous row's last element.
+
+For example, an array of 4x4: 
+    j=0 1 2 3
+ i=0  x x x x
+   1  x x x x
+   2  x x x x
+   3  x x x x
+  outer loop: i=2, 
+  inner loop: j=0
+  array element accessed b[i][j-1] becomes b[2][-1], which in turn is b[1][3]
+  due to linearized row-major storage of the 2-D array.
+  This causes loop-carried data dependence between i=2 and i=1.
+
+Data race pair: b[i][j]@75:7:W vs. b[i][j-1]@75:15:R
 */
-#define N 100
-
-double a[N][N],v[N],v_out[N];
-int mv()
-{           
-  int i,j;
-#pragma drd
-  for (i = 0; i < N; i++)
-  {         
-    float sum = 0.0;
-    for (j = 0; j < N; j++)
-    { 
-      sum += a[i][j]*v[j];
-    }  
-    v_out[i] = sum;
-  }         
-  return 0; 
-}
-
-int main()
+#include <stdio.h>
+int main(int argc, char* argv[]) 
 {
-  mv();
-  return 0;
-}
+  int i,j;
+  int n=100, m=100;
+  double b[n][m];
+#pragma drd
+  for (i=1;i<n;i++)
+    for (j=0;j<m;j++) // Note there will be out of bound access
+      b[i][j]=b[i][j-1];
 
+  printf ("b[50][50]=%f\n",b[50][50]);
+
+  return 0;     
+}
+  

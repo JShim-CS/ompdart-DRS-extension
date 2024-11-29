@@ -2,6 +2,8 @@
 This repo is a temporary repo for extending https://github.com/lmarzen/ompdart
 Below are ReadMe from OMPDART
 To use DRS, pleas refer to the README in the main branch
+For correct detection results, always delete drsolver.py before running the analysis.
+Uncommmenting line 52 of "run.sh" will automatically delete drsolver.py after the analysis.
 
 # OMPDart
 OMPDart - OpenMP Data Reduction Tool
