@@ -1,5 +1,8 @@
-# Private repo
-This repo is a backup for extending https://github.com/lmarzen/ompdart
+# Temp repo
+This repo is a temporary repo for extending https://github.com/lmarzen/ompdart
+Below are ReadMe from OMPDART
+To use DRS, pleas refer to the README in the main branch
+
 # OMPDart
 OMPDart - OpenMP Data Reduction Tool
 
