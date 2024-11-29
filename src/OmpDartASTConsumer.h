@@ -41,6 +41,7 @@ private:
   std::string getConditionOfLoop(ForStmt &FS, std::string indexVar, std::unordered_map<std::string,short> &indexV, short diff);
   //std::string getConditionOfLoopWithoutRecording(ForStmt &FS, std::string indexVar);
   void recordReadAndWrite();
+  std::string replaceTildeWithNum(std::string stringToChange, int num);
   std::string setStringForRegion(const Expr *exp, int *v, std::unordered_map<std::string, short> &indexV);
   std::string recursivelySetTheString(const Expr *exp, int *v, std::unordered_map<std::string, short> &indexV);
   std::string getLoopVariable(const ForStmt *exp);

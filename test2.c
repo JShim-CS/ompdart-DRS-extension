@@ -190,7 +190,9 @@ int main(int argc, char* argv[]){
         for (j = 1; j < b; j++) {
             for (k = 1; k < c; k++) {
                 for (m = 0; m < 5; m++) {
-                    u[i][j][k][m] = u[i-1][j][k][m];
+                    if(i > 0){
+                        u[i][j][k][m] = u[i-1][j][k][m];
+                    }
                 }
             }
         }
