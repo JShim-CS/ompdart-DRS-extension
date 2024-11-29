@@ -369,6 +369,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
   std::vector<std::string> indexEncodings;
   //std::unordered_map<std::string, bool> indexVCanBeSame;
   std::unordered_map<std::string, short> indexV;
+  unsigned endLine;
+
   int v = 0;
   if(TargetFunction){
     std::vector<AccessInfo> ai = TargetFunction->getAccessLog();
@@ -416,7 +418,8 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         llvm::outs() << loopVar <<" hit \n";
         //differentiableIndexList[loopVar] = {""};
         inTheTargetLoopRegion = true;
-
+        SourceLocation endLoc = fs->getEndLoc();
+        endLine = (*SM).getSpellingLineNumber(endLoc);
         
         //we need to get the loop info that surround the target loop
         for (AccessInfo aif : parentFor) {
@@ -435,7 +438,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         continue;
       }
       //llvm::outs()<<"433\n";
-      if(!stillSearching && a.Barrier == LoopEnd)break;
+      if(!stillSearching && a.S){
+        
+        SourceLocation Loc = a.S->getBeginLoc();
+        if (Loc.isValid()) {            
+            unsigned lineNumber = (*SM).getSpellingLineNumber(Loc);
+            if(endLine < lineNumber)break;
+        }
+        
+      }
       //llvm::outs()<<"435\n";
       if(inTheTargetLoopRegion && a.Barrier == LoopBegin){
         

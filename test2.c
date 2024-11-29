@@ -183,18 +183,19 @@ int main(int argc, char* argv[]){
     //#pragma drd
     int i, j, k, m,a,b,c;
     int arr[10];
-
+    int g = argc + 1;
     //#pragma omp for
     #pragma drs
     for (i = arr[2]; i < arr[0]; i++) {
         for (j = 1; j < b; j++) {
             for (k = 1; k < c; k++) {
                 for (m = 0; m < 5; m++) {
-                    if(i > 0){
-                        u[i-1][j][k][m] /= 1;
+                    if(i > 0 && g > 0){
                         u[i-1][j][k][m] = 2;
                     }
                 }
+                u[i][i*j][i][i] = 1;
+                
             }
         }
   }
