@@ -58,16 +58,10 @@ r_cond_2_1 = And (r_arr_index_2_1 == j_drdVar_11, True)
 raw_cond_0= And( wr_cond_0_0, r_cond_2_0,wr_cond_0_1, r_cond_2_1,
 (wr_arr_index_0_0 == r_arr_index_2_0), (wr_arr_index_0_1 == r_arr_index_2_1))
 raws = Or(raw_cond_0)
-finalCond0 = And(i_drdVar_13 != i_drdVar_10, True)
-finalCond1 = And(i_drdVar_12 != i_drdVar_10, True)
-finalCond2 = And(i_drdVar_11 != i_drdVar_10, True)
-myfinalcond = Or(finalCond0
-, finalCond1
-, finalCond2
-, False)
-finalWawsCond = And(waws, myfinalcond)
-finalRawsCond = And(raws, myfinalcond)
-cstrnts = Or(finalWawsCond,finalRawsCond)
+finalCond0 = And(i_drdVar_13 != i_drdVar_10)
+finalCond1 = And(i_drdVar_12 != i_drdVar_10)
+finalCond2 = And(i_drdVar_11 != i_drdVar_10)
+cstrnts = Or(waws,raws)
 solver.add(cstrnts)
 if solver.check() == z3.sat:
 	print("seems like data race(waw/raw/war) exists within the loop!")

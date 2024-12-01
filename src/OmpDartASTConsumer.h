@@ -25,7 +25,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   std::vector<DataTracker *> &FunctionTrackers;
   std::vector<Kernel *> &Kernels;
 
-  
+  //std::unordered_map<std::string, std::vector<std::string>> encodedIndexInfo;
   std::unordered_map<std::string, bool> readMap;
   std::unordered_map<std::string, bool> writeMap;
   std::unordered_map<std::string,bool> encodedWriteOrRead; //true if used for write op

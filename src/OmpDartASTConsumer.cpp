@@ -864,6 +864,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       
       std::vector<std::string> tempArrInfo;
       this->separateStringBy(arrIndex,'@',tempArrInfo);
+      llvm::outs()<< tempArrInfo[3]<<" MyINFO \n";
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter)+ "_"+ std::to_string(i) +"\")\n";
       
@@ -1063,6 +1064,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       llvm::outs()<<p.first <<" | " << p.second <<"\n";
     }
     int finalCondCounter = 0;
+
     for(int i = 0; i < diffString.size(); i++){
       for(int j = i+1; j < diffString.size(); j++){
         if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
@@ -1087,24 +1089,29 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         
       }
     }
-    std::string myFinalCond = "";
-    for(int f = 0; f < finalCondCounter; f++){
-      if(myFinalCond == ""){
-        myFinalCond = "finalCond"+std::to_string(f) +"\n";
-      }else{
-        myFinalCond += ", finalCond"+std::to_string(f)+"\n";
-      }
-    }
-    if(myFinalCond != ""){
-      myFinalCond = "myfinalcond = Or(" + myFinalCond + ")\n";
-      outfile << myFinalCond;
-      //outfile << "solver.add(myfinalcond)\n";
-      outfile <<"finalWawsCond = And(waws, myfinalcond)\n";
-      outfile <<"finalRawsCond = And(raws, myfinalcond)\n";
-      outfile<<"cstrnts = Or(finalWawsCond,finalRawsCond)\n";
-    }else{
-      outfile<<"cstrnts = Or(waws,raws)\n";
-    }
+    // std::string myFinalCond = "";
+    // for(int f = 0; f < finalCondCounter; f++){
+    //   if(myFinalCond == ""){
+    //     myFinalCond = "finalCond"+std::to_string(f) +"\n";
+    //   }else{
+    //     myFinalCond += ", finalCond"+std::to_string(f)+"\n";
+    //   }
+    // }
+
+    // if(myFinalCond != ""){
+    //   myFinalCond = "myfinalcond = And(" + myFinalCond + ")\n";
+    //   outfile << myFinalCond;
+    //   //outfile << "solver.add(myfinalcond)\n";
+    //   outfile <<"finalWawsCond = Or(waws, myfinalcond)\n";
+    //   outfile <<"finalRawsCond = Or(raws, myfinalcond)\n";
+    //   outfile<<"cstrnts = Or(finalWawsCond,finalRawsCond)\n";
+    // }
+    outfile<<"cstrnts = Or(waws,raws)\n";
+    
+
+
+    
+    
     
     outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
