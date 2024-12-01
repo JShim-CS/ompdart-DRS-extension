@@ -1070,12 +1070,12 @@ void OmpDartASTConsumer::recordReadAndWrite(){
             && (this->diffRequiredMap.find(diffString[i]) != this->diffRequiredMap.end() &&  this->diffRequiredMap.find(diffString[j]) != this->diffRequiredMap.end() )){
             if(this->diffRequiredMap[diffString[i]] == 1){
               outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
-                                                  diffString[i] + " != " + diffString[j] +", True)\n";
+                                                  diffString[i] + " != " + diffString[j] +")\n";
               finalCondCounter++;
               //outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
             }else if(this->diffRequiredMap[diffString[i]] == 2){
                outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
-                                                  diffString[i] + " == " + diffString[j] +", True)\n";
+                                                  diffString[i] + " == " + diffString[j] +")\n";
                 finalCondCounter++;
                //outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
             }
@@ -1095,13 +1095,17 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         myFinalCond += ", finalCond"+std::to_string(f)+"\n";
       }
     }
-    if(myFinalCond == ""){
-      outfile<<"cstrnts = Or(waws,raws)\n";
-    }else{
+    if(myFinalCond != ""){
       myFinalCond = "myfinalcond = Or(" + myFinalCond + ")\n";
       outfile << myFinalCond;
-      outfile<<"cstrnts = Or(waws,raws,myfinalcond)\n";
+      //outfile << "solver.add(myfinalcond)\n";
+      outfile <<"finalWawsCond = And(waws, myfinalcond)\n";
+      outfile <<"finalRawsCond = And(raws, myfinalcond)\n";
+      outfile<<"cstrnts = Or(finalWawsCond,finalRawsCond)\n";
+    }else{
+      outfile<<"cstrnts = Or(waws,raws)\n";
     }
+    
     outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
     outfile << "\tprint(\"seems like data race(waw/raw/war) exists within the loop!\")\n";

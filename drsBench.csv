@@ -32,12 +32,12 @@ Input File,Result
 /programming/bench-drd/DRB179-thread-sensitivity-yes.c,true
 /programming/bench-drd/DRB008-indirectaccess4-orig-yes.c,false
 /programming/bench-drd/DRB015-outofbounds-var-yes.c,false
-/programming/bench-drd/DRB208-simd-loadstore-no.c,false
+/programming/bench-drd/DRB208-simd-loadstore-no.c,true
 /programming/bench-drd/DRB002-antidep1-var-yes.c,true
 /programming/bench-drd/DRB081-func-arg-orig-no.c,false
 /programming/bench-drd/DRB012-minusminus-var-yes.c,false
 /programming/bench-drd/DRB046-doall2-orig-no.c,false
-/programming/bench-drd/DRB205-simd-gatherscatter-no.c,false
+/programming/bench-drd/DRB205-simd-gatherscatter-no.c,true
 /programming/bench-drd/DRB169-missingsyncwrite-orig-yes.c,false
 /programming/bench-drd/DRB026-targetparallelfor-orig-yes.c,true
 /programming/bench-drd/DRB057-jacobiinitialize-orig-no.c,false
@@ -54,8 +54,8 @@ Input File,Result
 /programming/bench-drd/DRB083-declared-in-func-orig-no.c,false
 /programming/bench-drd/DRB047-doallchar-orig-no.c,false
 /programming/bench-drd/DRB040-truedepsingleelement-var-yes.c,true
-/programming/bench-drd/DRB060-matrixmultiply-orig-no.c,false
-/programming/bench-drd/DRB054-inneronly2-orig-no.c,false
+/programming/bench-drd/DRB060-matrixmultiply-orig-no.c,true
+/programming/bench-drd/DRB054-inneronly2-orig-no.c,true
 /programming/bench-drd/DRB038-truedepseconddimension-var-yes.c,true
 /programming/bench-drd/DRB033-truedeplinear-orig-yes.c,true
 /programming/bench-drd/DRB062-matrixvector2-orig-no.c,false
