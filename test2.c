@@ -1,81 +1,214 @@
-/*
-Copyright (c) 2017, Lawrence Livermore National Security, LLC.
-Produced at the Lawrence Livermore National Laboratory
-Written by Chunhua Liao, Pei-Hung Lin, Joshua Asplund,
-Markus Schordan, and Ian Karlin
-(email: liao6@llnl.gov, lin32@llnl.gov, asplund1@llnl.gov,
-schordan1@llnl.gov, karlin1@llnl.gov)
-LLNL-CODE-732144
-All rights reserved.
+// #define N 100
+// #include<stdio.h>
+#include<omp.h>
+#define N 100
 
-This file is part of DataRaceBench. For details, see
-https://github.com/LLNL/dataracebench. Please also see the LICENSE file
-for our additional BSD notice.
+void fp1(){
+    int size = 100;
+    int a = N;
+    int b = N*N;
+    int arr[size];
 
-Redistribution and use in source and binary forms, with
-or without modification, are permitted provided that the following
-conditions are met:
+    #pragma omp parallel for
+    for(int i = 0; i < 99; i++){
+        if(a == b){
+            arr[i] = arr[i+1] + i;
+        }
+    }
 
-* Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the disclaimer below.
-
-* Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the disclaimer (as noted below)
-  in the documentation and/or other materials provided with the
-  distribution.
-
-* Neither the name of the LLNS/LLNL nor the names of its contributors
-  may be used to endorse or promote products derived from this
-  software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
-CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL
-SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-/* 
-The outmost loop is parallelized.
-But the inner level loop has out of bound access for b[i][j] when j equals to 0.
-This will case memory access of a previous row's last element.
-
-For example, an array of 4x4: 
-    j=0 1 2 3
- i=0  x x x x
-   1  x x x x
-   2  x x x x
-   3  x x x x
-  outer loop: i=2, 
-  inner loop: j=0
-  array element accessed b[i][j-1] becomes b[2][-1], which in turn is b[1][3]
-  due to linearized row-major storage of the 2-D array.
-  This causes loop-carried data dependence between i=2 and i=1.
-
-Data race pair: b[i][j]@75:7:W vs. b[i][j-1]@75:15:R
-*/
-#include <stdio.h>
-int main(int argc, char* argv[]) 
-{
-  int i,j;
-  int n=100, m=100;
-  double b[n][m];
-#pragma drd
-  for (i=1;i<n;i++)
-    for (j=0;j<m;j++) // Note there will be out of bound access
-      b[i][j]=b[i][j-1];
-
-  printf ("b[50][50]=%f\n",b[50][50]);
-
-  return 0;     
 }
-  
+
+void fp2(){
+    int size = 100;
+    int a = N;
+    int b = N*N;
+    int arr[size];
+
+    #pragma omp parallel for
+    for(int i = 0; i < 99; i++){
+        if(i == 100){
+            arr[i] = arr[i+1] + i;
+        }
+    }
+
+}
+
+void fp3(){
+    int size = 100;
+    int a = N;
+    int b = N*N;
+    int arr[size];
+
+    #pragma omp parallel for
+    for(int i = 0; i < 10; i++){
+        arr[i] = arr[i%10] + i;
+    }
+
+}
+
+void fp4(){
+    int size = 100;
+    int a = N;
+    int b = 0;
+    int arr[size];
+
+    #pragma omp parallel for
+    for(int i = 0; i < 10; i++){
+        if(a){
+            arr[i] = arr[i] + 1;
+        }
+        
+        if(b){
+            arr[i+1] = arr[i+1] + 1;
+        }
+    }
+
+}
+
+void fp5(){
+    int size = 100;
+    int a = N;
+    int b = 0;
+    int arr[size];
+
+    #pragma omp parallel for
+    for(int i = 0; i < N; i++){
+        if(a){
+            arr[i] = arr[i] + 1;
+        }
+        
+        for(int j = 0; j < 0; j++){
+            arr[j+1] = arr[j+1] + 1;
+        }
+        
+    }
+}
+
+
+void GPT4_FP() {
+    int array[100]; // A simple integer array with 100 elements
+
+    // Initialize the array with initial values
+    for (int i = 0; i < 100; i++) {
+        array[i] = i;
+    }
+
+    #pragma omp parallel for
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index]; // Read
+            array[index] = temp * 2 - 1; // Write
+        }
+    }
+
+    #pragma omp parallel for
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 7 + 1) % 100;
+        if (i == 10) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 1;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 5 + 2) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 3 - 2;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 2 + 3) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 2 + 3;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 11 + 4) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 4 - 4;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 6 + 5) % 100;
+        if (i == 11) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 3 + 5;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 8 + 6) % 100;
+        if (i == 20) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 5 - 6;
+        }
+    }
+
+    for (int i = 10; i > 0; i--) {
+        int index = (i * 4 + 7) % 100;
+        if (i == 12) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 4 + 7;
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        int index = (i * 9 + 8) % 100;
+        if (i == -1) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp * 6 - 8;
+        }
+    }
+
+    for (int i = 9; i >= 0; i--) {
+        int index = (i * 10 + 9) % 100;
+        if (i == 15) { // This condition will never be true
+            int temp = array[index];
+            array[index] = temp / 5 + 9;
+        }
+    }
+}
+
+static int arr[100];
+int main(int argc, char* argv[]){
+    int u[100][100][100][100];
+    int rhs[100][100][100][100];
+    //#pragma drd
+    int i, j, k, m,a,b,c;
+    int arr[10];
+    int g = argc + 1;
+    //#pragma omp for
+    //#pragma drs
+    for (i = arr[2]; i < arr[0]; i++) {
+        for (j = 1; j < b; j++) {
+            for (k = 1; k < c; k++) {
+                for (m = 0; m < 5; m++) {
+                    if(i > 0 && g > 0){
+                        u[i-1][j][k][m] = 2;
+                    }
+                }
+                u[i][i*j][i][i] = 1;
+                
+            }
+        }
+    }
+
+    #pragma drs
+    for(int i = 0; i < 10; i++){
+        arr[i] = arr[i+1];
+        arr[i+2] = arr[i*3];
+    }
+
+    return 0;
+
+}
+
+
+

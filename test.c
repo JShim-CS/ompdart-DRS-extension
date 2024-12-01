@@ -185,7 +185,7 @@ int main(int argc, char* argv[]){
     int arr[10];
     int g = argc + 1;
     //#pragma omp for
-    #pragma drs
+    //#pragma drs
     for (i = arr[2]; i < arr[0]; i++) {
         for (j = 1; j < b; j++) {
             for (k = 1; k < c; k++) {
@@ -198,7 +198,13 @@ int main(int argc, char* argv[]){
                 
             }
         }
-  }
+    }
+
+    #pragma drs
+    for(int i = 0; i < 10; i++){
+        arr[i] = arr[i+1];
+        arr[i+2] = arr[i*3];
+    }
 
     return 0;
 

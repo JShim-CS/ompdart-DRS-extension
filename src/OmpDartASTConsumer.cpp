@@ -1062,16 +1062,24 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     for(auto p : this->encodedWriteOrRead){
       llvm::outs()<<p.first <<" | " << p.second <<"\n";
     }
+    int finalCondCounter = 0;
     for(int i = 0; i < diffString.size(); i++){
       for(int j = i+1; j < diffString.size(); j++){
         if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
           if((diffString[i].substr(0,diffString[i].find('_')) == diffString[j].substr(0,diffString[j].find('_')))
             && (this->diffRequiredMap.find(diffString[i]) != this->diffRequiredMap.end() &&  this->diffRequiredMap.find(diffString[j]) != this->diffRequiredMap.end() )){
             if(this->diffRequiredMap[diffString[i]] == 1){
-              outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+              outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
+                                                  diffString[i] + " != " + diffString[j] +", True)\n";
+              finalCondCounter++;
+              //outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
             }else if(this->diffRequiredMap[diffString[i]] == 2){
-               outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
+               outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
+                                                  diffString[i] + " == " + diffString[j] +", True)\n";
+                finalCondCounter++;
+               //outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
             }
+           
            
           }
           
@@ -1079,7 +1087,21 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         
       }
     }
-    outfile<<"cstrnts = Or(waws,raws)\n";
+    std::string myFinalCond = "";
+    for(int f = 0; f < finalCondCounter; f++){
+      if(myFinalCond == ""){
+        myFinalCond = "finalCond"+std::to_string(f) +"\n";
+      }else{
+        myFinalCond += ", finalCond"+std::to_string(f)+"\n";
+      }
+    }
+    if(myFinalCond == ""){
+      outfile<<"cstrnts = Or(waws,raws)\n";
+    }else{
+      myFinalCond = "myfinalcond = Or(" + myFinalCond + ")\n";
+      outfile << myFinalCond;
+      outfile<<"cstrnts = Or(waws,raws,myfinalcond)\n";
+    }
     outfile << "solver.add(cstrnts)\n";
     outfile << "if solver.check() == z3.sat:\n";
     outfile << "\tprint(\"seems like data race(waw/raw/war) exists within the loop!\")\n";
