@@ -1259,7 +1259,6 @@ std::string OmpDartASTConsumer::recursivelySetTheString(const Expr *exp, int *v,
 
 void OmpDartASTConsumer::separateStringBy(std::string st, char sep, std::vector<std::string> &vect){
   std::string temp = "";
-
   for(char c : st){
     if(c == sep){
       //temp = this->replaceTildeWithNum(temp,v);
