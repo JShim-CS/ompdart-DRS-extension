@@ -686,7 +686,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       this->separateStringBy(arrIndex,'@',tempArrInfo);
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter)+ "_"+ std::to_string(i) +"\")\n";
-      
+        for(auto s : Encoded2Original){
+          if(tempArrInfo[2+i].find(s.first)){
+            this->encodedIndexInfo["wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i)].push_back(s.first);
+          }
+        }
       }
       
       for(auto p : loopVar2LoopPred){
@@ -864,10 +868,15 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       
       std::vector<std::string> tempArrInfo;
       this->separateStringBy(arrIndex,'@',tempArrInfo);
-      llvm::outs()<< tempArrInfo[3]<<" MyINFO \n";
+      //llvm::outs()<< tempArrInfo[3]<<" MyINFO \n";
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter)+ "_"+ std::to_string(i) +"\")\n";
-      
+        for(auto s : Encoded2Original){
+          if(tempArrInfo[2+i].find(s.first)){
+            this->encodedIndexInfo["r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i)].push_back(s.first);
+          }
+        }
+        
       }
       //llvm::outs() <<"LINE 831\n";
       
