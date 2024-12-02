@@ -115,7 +115,7 @@
 #         print(f"Copied: {src_file} -> {dest_file}")
 
 # # Example usage
-# path1 = "/programming/bench"
+# path1 = "/programming/bench-drd"
 # path2 = "/programming/dataracebench/micro-benchmarks"
 # path3 = "/programming/subsetParallel"
 # copy_common_files(path1, path2, path3)
@@ -125,68 +125,107 @@ import os
 import subprocess
 import csv
 
-def run_sh_and_log_results(c_path, sh_script, output_csv):
-    """
-    Run `./run.sh` for each `.c` file in a directory and log the results to a CSV.
+# def run_sh_and_log_results(c_path, sh_script, output_csv):
+#     """
+#     Run `./run.sh` for each `.c` file in a directory and log the results to a CSV.
 
-    Args:
-        c_path (str): Path containing `.c` files.
-        sh_script (str): Path to the `run.sh` script.
-        output_csv (str): Path to the output CSV file.
-    """
-    # Ensure the output directory for the CSV exists
-    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+#     Args:
+#         c_path (str): Path containing `.c` files.
+#         sh_script (str): Path to the `run.sh` script.
+#         output_csv (str): Path to the output CSV file.
+#     """
+#     # Ensure the output directory for the CSV exists
+#     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
 
-    # List all `.c` files in the directory
-    c_files = [os.path.join(c_path, f) for f in os.listdir(c_path) if f.endswith('.c')]
+#     # List all `.c` files in the directory
+#     c_files = [os.path.join(c_path, f) for f in os.listdir(c_path) if f.endswith('.c')]
 
-    # Open CSV file for writing results
-    with open(output_csv, mode='w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(["Input File", "Result"])
+#     # Open CSV file for writing results
+#     with open(output_csv, mode='w', newline='') as csv_file:
+#         csv_writer = csv.writer(csv_file)
+#         csv_writer.writerow(["Input File", "Result"])
 
-        # Process each `.c` file
-        for c_file in c_files:
-            try:
-                # Run the shell script
-                result = subprocess.run([sh_script, "-i", c_file, "-o", "test2.c"],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True)
+#         # Process each `.c` file
+#         for c_file in c_files:
+#             try:
+#                 # Run the shell script
+#                 result = subprocess.run([sh_script, "-i", c_file, "-o", "test2.c"],
+#                                         stdout=subprocess.PIPE,
+#                                         stderr=subprocess.PIPE,
+#                                         text=True)
 
-                # Combine stdout and stderr to capture all output
-                combined_output = result.stdout + result.stderr
+#                 # Combine stdout and stderr to capture all output
+#                 combined_output = result.stdout + result.stderr
 
-                # Parse the output
-                if "seems like data race(waw/raw/war) exists within the loop!" in combined_output:
-                    csv_writer.writerow([c_file, "true"])
-                elif "seems like no data race exists (please double check)" in combined_output:
-                    csv_writer.writerow([c_file, "false"])
-                else:
-                    csv_writer.writerow([c_file, "fail"])
+#                 # Parse the output
+#                 if "seems like data race(waw/raw/war) exists within the loop!" in combined_output:
+#                     csv_writer.writerow([c_file, "true"])
+#                 elif "seems like no data race exists (please double check)" in combined_output:
+#                     csv_writer.writerow([c_file, "false"])
+#                 else:
+#                     csv_writer.writerow([c_file, "fail"])
 
-                print(f"Processed: {c_file}")
-                result.stdout = ""
-                result.stderr = ""
+#                 print(f"Processed: {c_file}")
+#                 result.stdout = ""
+#                 result.stderr = ""
 
-            except Exception as e:
-                # Handle any unexpected errors
-                print(f"Error processing {c_file}: {e}")
-                csv_writer.writerow([c_file, "fail"])
-
-
-
-
-# Example usage
-c_files_path = "/programming/bench-drd"
-run_sh_script = "./run.sh"
-output_csv_path = "./drsBench.csv"
-
-run_sh_and_log_results(c_files_path, run_sh_script, output_csv_path)
+#             except Exception as e:
+#                 # Handle any unexpected errors
+#                 print(f"Error processing {c_file}: {e}")
+#                 csv_writer.writerow([c_file, "fail"])
 
 
 
-with open("drsBench.csv",'r') as f:
+
+# # Example usage
+# c_files_path = "/programming/bench-drd"
+# run_sh_script = "./run.sh"
+# output_csv_path = "./drsBench.csv"
+
+# run_sh_and_log_results(c_files_path, run_sh_script, output_csv_path)
+
+
+
+# with open("drsBench.csv",'r') as f:
+#     tp = 0
+#     fp = 0
+#     tn = 0
+#     fn = 0
+#     fails = 0
+#     counter = 0
+#     yes = 0
+#     no = 0
+#     for r in f:
+#         if counter != 0:
+#             cols = r.split(",")
+#             if "simd" in cols[0]:
+#                 continue
+
+#             if "yes" in cols[0] and "true" in cols[1]:
+#                 yes +=1
+#                 tp += 1
+#             elif "no" in cols[0] and "true" in cols[1]:
+#                 no += 1
+#                 fp += 1
+#             elif "no" in cols[0] and "false" in cols[1]:
+#                 no += 1
+#                 tn += 1
+#             elif "yes" in cols[0] and "false" in cols[1]:
+#                 yes +=1
+#                 fn += 1
+#             else:
+#                 fails += 1
+#         counter += 1
+#     print(f"true positives {tp}")
+#     print(f"false positives {fp}")
+#     print(f"true negatives {tn}")
+#     print(f"false negatives {fn}")
+#     print(f"fails {fails}")
+#     print(f"yes {yes}")
+#     print(f"no {no}")
+#     print(f"# files {counter-1}")
+
+with open("LLOVBench.csv",'r') as f:
     tp = 0
     fp = 0
     tn = 0
@@ -224,3 +263,42 @@ with open("drsBench.csv",'r') as f:
     print(f"yes {yes}")
     print(f"no {no}")
     print(f"# files {counter-1}")
+
+# with open("openrace.csv",'r') as f:
+#     tp = 0
+#     fp = 0
+#     tn = 0
+#     fn = 0
+#     fails = 0
+#     counter = 0
+#     yes = 0
+#     no = 0
+#     for r in f:
+#         if counter != 0:
+#             cols = r.split(",")
+#             if "simd" in cols[2]:
+#                 continue
+
+#             if "yes" in cols[2] and "true" in cols[3]:
+#                 yes +=1
+#                 tp += 1
+#             elif "no" in cols[2] and "true" in cols[3]:
+#                 no += 1
+#                 fp += 1
+#             elif "no" in cols[2] and "false" in cols[3]:
+#                 no += 1
+#                 tn += 1
+#             elif "yes" in cols[2] and "false" in cols[3]:
+#                 yes +=1
+#                 fn += 1
+#             else:
+#                 fails += 1
+#         counter += 1
+#     print(f"true positives {tp}")
+#     print(f"false positives {fp}")
+#     print(f"true negatives {tn}")
+#     print(f"false negatives {fn}")
+#     print(f"fails {fails}")
+#     print(f"yes {yes}")
+#     print(f"no {no}")
+#     print(f"# files {counter-1}")
