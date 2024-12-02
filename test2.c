@@ -45,27 +45,30 @@ THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*
-Classic i-k-j matrix multiplication
+Matrix-vector multiplication: outer-level loop parallelization
 */
-
 #define N 100
-#define M 100 
-#define K 100
-double a[N][M],b[M][K],c[N][K];
-            
-int mmm()   
+
+double a[N][N],v[N],v_out[N];
+int mv()
 {           
-  int i,j,k;
+  int i,j;
 #pragma drd
-  for (i = 0; i < N; i++) 
-    for (k = 0; k < K; k++) 
-      for (j = 0; j < M; j++)
-        c[i][j]= c[i][j]+a[i][k]*b[k][j];
+  for (i = 0; i < N; i++)
+  {         
+    float sum = 0.0;
+    for (j = 0; j < N; j++)
+    { 
+      sum += a[i][j]*v[j];
+    }  
+    v_out[i] = sum;
+  }         
   return 0; 
-} 
+}
 
 int main()
 {
-  mmm();
+  mv();
   return 0;
-}  
+}
+

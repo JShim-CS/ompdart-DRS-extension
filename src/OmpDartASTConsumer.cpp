@@ -687,7 +687,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter)+ "_"+ std::to_string(i) +"\")\n";
         for(auto s : Encoded2Original){
-          if(tempArrInfo[2+i].find(s.first)){
+          if(tempArrInfo[2+i].find(s.first) != std::string::npos){
             this->encodedIndexInfo["wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i)].push_back(s.first);
           }
         }
@@ -798,8 +798,46 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         for(;k<writeVector[i]->size();k++){
           if(k != writeVector[i]->size()-1){
             indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+            if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
+              for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
+                for(auto idx2 : this->encodedIndexInfo[writeVector[j]->at(k)]){
+                  if(idx != idx2 && Encoded2Original[idx] == Encoded2Original[idx2]){ //1 == diff, 2 == same
+                    
+                    //llvm::outs()<< idx <<" CHECK!!!" << this->diffRequiredMap[idx2.first] <<"\n";
+                    if(this->diffRequiredMap[idx2] == 1){
+                      indexMatchCondition += "(" + idx + " != " + idx2 + "), \n";
+                    }else if(this->diffRequiredMap[idx2] == 2){
+                      indexMatchCondition += "(" + idx + " == " + idx2 + "), \n";
+                    }
+                  }
+              
+              
+                  
+                }
+              }
+
+            }
           }else{
             indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+            if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
+              for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
+                for(auto idx2 : this->encodedIndexInfo[writeVector[j]->at(k)]){
+                  if(idx != idx2 && Encoded2Original[idx] == Encoded2Original[idx2]){ //1 == diff, 2 == same
+                    
+                    //llvm::outs()<< idx <<" CHECK!!!" << this->diffRequiredMap[idx2.first] <<"\n";
+                    if(this->diffRequiredMap[idx2] == 1){
+                      indexMatchCondition += ", (" + idx + " != " + idx2 + ")\n";
+                    }else if(this->diffRequiredMap[idx2] == 2){
+                      indexMatchCondition += ", (" + idx + " == " + idx2 + ")\n";
+                    }
+                  }
+              
+              
+                  
+                }
+              }
+
+            }
           }
         }
         //llvm::outs() << "HAHAHAH\n";
@@ -872,7 +910,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i) + " = Int(\"" + "r_arr_index_" + std::to_string(r_counter)+ "_"+ std::to_string(i) +"\")\n";
         for(auto s : Encoded2Original){
-          if(tempArrInfo[2+i].find(s.first)){
+          if(tempArrInfo[2+i].find(s.first) != std::string::npos){
             this->encodedIndexInfo["r_arr_index_" + std::to_string(r_counter) + "_"+ std::to_string(i)].push_back(s.first);
           }
         }
@@ -1036,8 +1074,45 @@ void OmpDartASTConsumer::recordReadAndWrite(){
         for(;k<writeVector[i]->size();k++){
           if(k != writeVector[i]->size()-1){
             indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+readVector[j]->at(k) + "), ";
+            if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
+              for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
+                for(auto idx2 : this->encodedIndexInfo[readVector[j]->at(k)]){
+                  if(idx != idx2 && Encoded2Original[idx] == Encoded2Original[idx2]){ //1 == diff, 2 == same
+                    
+                    //llvm::outs()<< idx <<" CHECK!!!" << this->diffRequiredMap[idx2.first] <<"\n";
+                    if(this->diffRequiredMap[idx2] == 1){
+                      indexMatchCondition += "(" + idx + " != " + idx2 + "), \n";
+                    }else if(this->diffRequiredMap[idx2] == 2){
+                      indexMatchCondition += "(" + idx + " == " + idx2 + "), \n";
+                    }
+                  }
+              
+              
+                  
+                }
+              }
+
+            }
           }else{
             indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+readVector[j]->at(k) + ")";
+            if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
+              for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
+                for(auto idx2 : this->encodedIndexInfo[readVector[j]->at(k)]){
+                  if(idx != idx2 && Encoded2Original[idx] == Encoded2Original[idx2]){ //1 == diff, 2 == same
+                    //llvm::outs()<< idx <<" CHECK!!!" << this->diffRequiredMap[idx2.first] <<"\n";
+                    if(this->diffRequiredMap[idx2] == 1){
+                      indexMatchCondition += ", (" + idx + " != " + idx2 + ")\n";
+                    }else if(this->diffRequiredMap[idx2] == 2){
+                      indexMatchCondition += ", (" + idx + " == " + idx2 + ")\n";
+                    }
+                  }
+              
+              
+                  
+                }
+              }
+
+            }
           }
         }
         //llvm::outs() <<"END\n";
@@ -1074,30 +1149,30 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     }
     int finalCondCounter = 0;
 
-    for(int i = 0; i < diffString.size(); i++){
-      for(int j = i+1; j < diffString.size(); j++){
-        if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
-          if((diffString[i].substr(0,diffString[i].find('_')) == diffString[j].substr(0,diffString[j].find('_')))
-            && (this->diffRequiredMap.find(diffString[i]) != this->diffRequiredMap.end() &&  this->diffRequiredMap.find(diffString[j]) != this->diffRequiredMap.end() )){
-            if(this->diffRequiredMap[diffString[i]] == 1){
-              outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
-                                                  diffString[i] + " != " + diffString[j] +")\n";
-              finalCondCounter++;
-              //outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
-            }else if(this->diffRequiredMap[diffString[i]] == 2){
-               outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
-                                                  diffString[i] + " == " + diffString[j] +")\n";
-                finalCondCounter++;
-               //outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
-            }
+    // for(int i = 0; i < diffString.size(); i++){
+    //   for(int j = i+1; j < diffString.size(); j++){
+    //     if(this->encodedWriteOrRead[diffString[i]] || this->encodedWriteOrRead[diffString[j]]){
+    //       if((diffString[i].substr(0,diffString[i].find('_')) == diffString[j].substr(0,diffString[j].find('_')))
+    //         && (this->diffRequiredMap.find(diffString[i]) != this->diffRequiredMap.end() &&  this->diffRequiredMap.find(diffString[j]) != this->diffRequiredMap.end() )){
+    //         if(this->diffRequiredMap[diffString[i]] == 1){
+    //           outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
+    //                                               diffString[i] + " != " + diffString[j] +")\n";
+    //           finalCondCounter++;
+    //           //outfile << "solver.add(" + diffString[i] + " != " + diffString[j] +")\n";
+    //         }else if(this->diffRequiredMap[diffString[i]] == 2){
+    //            outfile<<"finalCond"<<std::to_string(finalCondCounter)<<" = " << "And(" + 
+    //                                               diffString[i] + " == " + diffString[j] +")\n";
+    //             finalCondCounter++;
+    //            //outfile << "solver.add(" + diffString[i] + " == " + diffString[j] +")\n";
+    //         }
            
            
-          }
+    //       }
           
-        }
+    //     }
         
-      }
-    }
+    //   }
+    // }
     // std::string myFinalCond = "";
     // for(int f = 0; f < finalCondCounter; f++){
     //   if(myFinalCond == ""){
