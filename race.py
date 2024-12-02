@@ -226,6 +226,7 @@ import csv
 #     print(f"# files {counter-1}")
 
 with open("LLOVBench.csv",'r') as f:
+    fpNames = []
     tp = 0
     fp = 0
     tn = 0
@@ -246,6 +247,7 @@ with open("LLOVBench.csv",'r') as f:
             elif "no" in cols[0] and "true" in cols[1]:
                 no += 1
                 fp += 1
+                fpNames.append(cols[0])
             elif "no" in cols[0] and "false" in cols[1]:
                 no += 1
                 tn += 1
@@ -263,6 +265,7 @@ with open("LLOVBench.csv",'r') as f:
     print(f"yes {yes}")
     print(f"no {no}")
     print(f"# files {counter-1}")
+    print(fpNames)
 
 # with open("openrace.csv",'r') as f:
 #     tp = 0
