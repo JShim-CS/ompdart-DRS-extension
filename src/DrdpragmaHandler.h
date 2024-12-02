@@ -18,7 +18,7 @@ public:
     SourceLocation drd_sl; //for handling pragma later on
     bool found;
     unsigned *lineNumber;
-    DrdpragmaHandler() : PragmaHandler("drd"), found(false) {}
+    DrdpragmaHandler() : PragmaHandler("drs"), found(false) {}
     //std::string arrayName = "";
     //written by Junhyung Shim
     //sets the line-number of a #pragma 
