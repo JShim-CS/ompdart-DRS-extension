@@ -1,12 +1,5 @@
-// #define N 100
-// #include<stdio.h>
 #include<omp.h>
 #define N 100
-
-/*
-Ran test on each function, commenting out other functions that we are not testing.
-For example, I commented out fp2,fp3,fp4,fp5,fp6 when testing fp1.
-*/
 
 void fp1(){ 
     int size = 100;
@@ -26,13 +19,7 @@ void fp1(){
 
 
 int main(int argc, char* argv[]){
-    fp1();    //fp  
-    //fp2();    //fp
-    //fp3();    //fp
-    //fp4();    //fp
-    //fp5();      //nfp
-    //fp6();
-    //fp7();
+    fp1();    
     return 0;
 
 }

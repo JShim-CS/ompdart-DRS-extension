@@ -225,49 +225,8 @@ import csv
 #     print(f"no {no}")
 #     print(f"# files {counter-1}")
 
-with open("LLOVBench.csv",'r') as f:
-    fpNames = []
-    tp = 0
-    fp = 0
-    tn = 0
-    fn = 0
-    fails = 0
-    counter = 0
-    yes = 0
-    no = 0
-    for r in f:
-        if counter != 0:
-            cols = r.split(",")
-            if "simd" in cols[0]:
-                continue
-
-            if "yes" in cols[0] and "true" in cols[1]:
-                yes +=1
-                tp += 1
-            elif "no" in cols[0] and "true" in cols[1]:
-                no += 1
-                fp += 1
-                fpNames.append(cols[0])
-            elif "no" in cols[0] and "false" in cols[1]:
-                no += 1
-                tn += 1
-            elif "yes" in cols[0] and "false" in cols[1]:
-                yes +=1
-                fn += 1
-            else:
-                fails += 1
-        counter += 1
-    print(f"true positives {tp}")
-    print(f"false positives {fp}")
-    print(f"true negatives {tn}")
-    print(f"false negatives {fn}")
-    print(f"fails {fails}")
-    print(f"yes {yes}")
-    print(f"no {no}")
-    print(f"# files {counter-1}")
-    print(fpNames)
-
-# with open("openrace.csv",'r') as f:
+# with open("LLOVBench.csv",'r') as f:
+#     fpNames = []
 #     tp = 0
 #     fp = 0
 #     tn = 0
@@ -279,19 +238,20 @@ with open("LLOVBench.csv",'r') as f:
 #     for r in f:
 #         if counter != 0:
 #             cols = r.split(",")
-#             if "simd" in cols[2]:
+#             if "simd" in cols[0]:
 #                 continue
 
-#             if "yes" in cols[2] and "true" in cols[3]:
+#             if "yes" in cols[0] and "true" in cols[1]:
 #                 yes +=1
 #                 tp += 1
-#             elif "no" in cols[2] and "true" in cols[3]:
+#             elif "no" in cols[0] and "true" in cols[1]:
 #                 no += 1
 #                 fp += 1
-#             elif "no" in cols[2] and "false" in cols[3]:
+#                 fpNames.append(cols[0])
+#             elif "no" in cols[0] and "false" in cols[1]:
 #                 no += 1
 #                 tn += 1
-#             elif "yes" in cols[2] and "false" in cols[3]:
+#             elif "yes" in cols[0] and "false" in cols[1]:
 #                 yes +=1
 #                 fn += 1
 #             else:
@@ -305,3 +265,43 @@ with open("LLOVBench.csv",'r') as f:
 #     print(f"yes {yes}")
 #     print(f"no {no}")
 #     print(f"# files {counter-1}")
+#     print(fpNames)
+
+with open("openrace.csv",'r') as f:
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
+    fails = 0
+    counter = 0
+    yes = 0
+    no = 0
+    for r in f:
+        if counter != 0:
+            cols = r.split(",")
+            if "simd" in cols[2]:
+                continue
+
+            if "yes" in cols[2] and "true" in cols[3]:
+                yes +=1
+                tp += 1
+            elif "no" in cols[2] and "true" in cols[3]:
+                no += 1
+                fp += 1
+            elif "no" in cols[2] and "false" in cols[3]:
+                no += 1
+                tn += 1
+            elif "yes" in cols[2] and "false" in cols[3]:
+                yes +=1
+                fn += 1
+            else:
+                fails += 1
+        counter += 1
+    print(f"true positives {tp}")
+    print(f"false positives {fp}")
+    print(f"true negatives {tn}")
+    print(f"false negatives {fn}")
+    print(f"fails {fails}")
+    print(f"yes {yes}")
+    print(f"no {no}")
+    print(f"# files {counter-1}")
