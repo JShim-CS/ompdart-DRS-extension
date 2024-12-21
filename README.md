@@ -9,7 +9,7 @@ Python 3.8.10 (tested)
 
 Z3 Python (4.13.2, but may work with other versions)
 
-# Temp repo
+# drsolver.py
 For correct detection results, always delete drsolver.py before running the analysis.
 Uncommmenting line 52 of "run.sh" will automatically delete drsolver.py after the analysis.
 
