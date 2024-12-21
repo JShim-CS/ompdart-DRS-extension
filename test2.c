@@ -1,34 +1,25 @@
-// #define N 100
-// #include<stdio.h>
 #include<omp.h>
 #define N 100
 
-/*
-Ran test on each function, commenting out other functions that we are not testing.
-For example, I commented out fp2,fp3,fp4,fp5,fp6 when testing fp1.
-*/
+void fp1(){ 
+    int size = 100;
+    int a = N;
+    int b = N*N;
+    int arr[size];
 
-
-
-
-void fp7(){
-    int arr[1000];
     #pragma drs
-    for(int i = 0; i < 10; i++){
-        if(i*i*i >= 1000){
-            arr[i%6 + 6*i] = arr[2*i];
+    for(int i = 0; i < 99; i++){
+        if(a == b){
+            arr[i] = arr[i+1] + i;
         }
     }
+
 }
 
+
+
 int main(int argc, char* argv[]){
-    //fp1();    //fp  
-    //fp2();    //fp
-    //fp3();    //fp
-    //fp4();    //fp
-    //fp5();      //nfp
-    //fp6();
-    fp7();
+    fp1();    
     return 0;
 
 }

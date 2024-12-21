@@ -49,7 +49,7 @@ OUTFILENAME=$2
 set -x
 $COMMAND
 $DRSOLVE
-$RM
+#$RM
 
 # help
 # clang -Xclang -load -Xclang $LIB -Xclang -plugin -Xclang $PLUGIN -Xclang -plugin-arg-$PLUGIN -Xclang --help -fopenmp -c $FILENAME
