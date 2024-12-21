@@ -20,7 +20,6 @@ public:
     unsigned *lineNumber;
     DrdpragmaHandler() : PragmaHandler("drs"), found(false) {}
     //std::string arrayName = "";
-    //written by Junhyung Shim
     //sets the line-number of a #pragma 
     void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer, Token &Token) override;
 

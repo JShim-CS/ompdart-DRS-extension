@@ -2,7 +2,7 @@
 
 #include "clang/AST/ParentMapContext.h"
 
-//added by Junhyung Shim
+
 #include "clang/Frontend/FrontendAction.h" //for Lexer
 
 #include "CommonUtils.h"

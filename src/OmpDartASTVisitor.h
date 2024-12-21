@@ -15,7 +15,7 @@ class OmpDartASTVisitor : public RecursiveASTVisitor<OmpDartASTVisitor> {
 private:
   ASTContext *Context;
   SourceManager *SM;
-  //added by Junhyung Shim
+  
   CompilerInstance *CI;
   unsigned* drdPragmaLineNumber; 
   ControlRegions *CR;
