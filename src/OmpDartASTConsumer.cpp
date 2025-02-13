@@ -526,7 +526,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     loopCounter++;
                   }else if(ifs->getElse() == mostRecentControlRegion){ 
                     if(requiredCondition != ""){
-                      requiredCondition += " AND ";
+                      requiredCondition += ", ";
                     }
                     std::string tempCond = this->recursivelySetTheString(ifs->getCond(),&v,indexV);
                     tempCond = tempCond.find('[') == std::string::npos ? tempCond : "DRD_RANDOM_VAR";
@@ -546,7 +546,7 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     requiredCondition += "(" + tempCond + ")";
                   }else{
                     if(requiredCondition != ""){
-                      requiredCondition += " AND ";
+                      requiredCondition += ", ";
                     }
                     requiredCondition += "(" +this->recursivelySetTheString(ifs->getCond(),&v,indexV) +")";
                   }

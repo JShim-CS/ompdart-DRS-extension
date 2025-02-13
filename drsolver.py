@@ -1,31 +1,50 @@
 from z3 import *
 solver=Solver()
+i = Int("i")
+j = Int("j")
+histogram = Int("histogram")
+histogramSize = Int("histogramSize")
+solver.add(histogramSize == 200000000)
 argv = Int("argv")
 argc = Int("argc")
-i = Int("i")
-b = Int("b")
-arr = Int("arr")
-a = Int("a")
-solver.add(a == 100)
-size = Int("size")
-solver.add(size == 100)
 DRD_RANDOM_VAR = Int("DRD_RANDOM_VAR")
-N = Int("N")
-solver.add(N == 100)
 wr_arr_index_0_0 = Int("wr_arr_index_0_0")
+i_drdVar_31 = Int("i_drdVar_31")
+solver.add((i_drdVar_31>=0),(i_drdVar_31<100))
+i_drdVar_23 = Int("i_drdVar_23")
+solver.add((i_drdVar_23>=0),(i_drdVar_23<100))
+i_drdVar_14 = Int("i_drdVar_14")
+solver.add((i_drdVar_14>=0),(i_drdVar_14<100))
 i_drdVar_7 = Int("i_drdVar_7")
-solver.add((i_drdVar_7>=0),(i_drdVar_7<99))
-i_drdVar_6 = Int("i_drdVar_6")
-solver.add((i_drdVar_6>=0),(i_drdVar_6<99))
-wr_cond_0_0 = And (wr_arr_index_0_0 == i_drdVar_6, (a==b))
-waws = False
-
-r_arr_index_0_0 = Int("r_arr_index_0_0")
-r_cond_0_0 = And (r_arr_index_0_0 == i_drdVar_7 + 1, (a==b))
-raw_cond_0= And( wr_cond_0_0, r_cond_0_0,
-(wr_arr_index_0_0 == r_arr_index_0_0), (i_drdVar_6 != i_drdVar_7)
+solver.add((i_drdVar_7>=0),(i_drdVar_7<100))
+wr_cond_0_0 = And (wr_arr_index_0_0 == ((i_drdVar_31 - 1) * (i_drdVar_31 - 1) * (i_drdVar_31 + 2) * (i_drdVar_31 + 3)), (i_drdVar_31%13!=0),(i_drdVar_31%5!=0),((i_drdVar_31*i_drdVar_31*i_drdVar_31)%2!=0))
+wr_arr_index_1_0 = Int("wr_arr_index_1_0")
+wr_cond_1_0 = And (wr_arr_index_1_0 == ((i_drdVar_23 - 1) * (i_drdVar_23 - 1) * (i_drdVar_23 - 1) * (i_drdVar_23 - 1)), (i_drdVar_23%13==0),(i_drdVar_23%5!=0),((i_drdVar_23*i_drdVar_23*i_drdVar_23)%2!=0))
+wr_arr_index_2_0 = Int("wr_arr_index_2_0")
+wr_cond_2_0 = And (wr_arr_index_2_0 == ((i_drdVar_14 + 1) * (i_drdVar_14 + 1) * (i_drdVar_14 + 1) * (i_drdVar_14 + 1)), (i_drdVar_14%5==0),((i_drdVar_14*i_drdVar_14*i_drdVar_14)%2!=0))
+wr_arr_index_3_0 = Int("wr_arr_index_3_0")
+wr_cond_3_0 = And (wr_arr_index_3_0 == (i_drdVar_7 * i_drdVar_7 * i_drdVar_7), ((i_drdVar_7*i_drdVar_7*i_drdVar_7)%2==0))
+waw_cond_0 = And( wr_cond_0_0, wr_cond_1_0,
+(wr_arr_index_0_0 == wr_arr_index_1_0), (i_drdVar_31 != i_drdVar_23)
 )
-raws = Or(raw_cond_0)
+waw_cond_1 = And( wr_cond_0_0, wr_cond_2_0,
+(wr_arr_index_0_0 == wr_arr_index_2_0), (i_drdVar_31 != i_drdVar_14)
+)
+waw_cond_2 = And( wr_cond_0_0, wr_cond_3_0,
+(wr_arr_index_0_0 == wr_arr_index_3_0), (i_drdVar_31 != i_drdVar_7)
+)
+waw_cond_3 = And( wr_cond_1_0, wr_cond_2_0,
+(wr_arr_index_1_0 == wr_arr_index_2_0), (i_drdVar_23 != i_drdVar_14)
+)
+waw_cond_4 = And( wr_cond_1_0, wr_cond_3_0,
+(wr_arr_index_1_0 == wr_arr_index_3_0), (i_drdVar_23 != i_drdVar_7)
+)
+waw_cond_5 = And( wr_cond_2_0, wr_cond_3_0,
+(wr_arr_index_2_0 == wr_arr_index_3_0), (i_drdVar_14 != i_drdVar_7)
+)
+waws = Or(waw_cond_5, waw_cond_4, waw_cond_3, waw_cond_2, waw_cond_1, waw_cond_0)
+
+raws = False
 cstrnts = Or(waws,raws)
 solver.add(cstrnts)
 if solver.check() == z3.sat:

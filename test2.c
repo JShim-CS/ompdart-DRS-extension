@@ -1,28 +1,34 @@
-#include<omp.h>
-#define N 100
+#include <omp.h>
 
-void fp1(){ 
-    int size = 100;
-    int a = N;
-    int b = N*N;
-    int arr[size];
+int main(int argc, char *argv[]) {
+    int histogramSize = 200000000;
+    int histogram[histogramSize];
 
+    for (int j = 0; j < histogramSize; j++) {
+        histogram[j] = 0;
+    }
+   
     #pragma drs
-    for(int i = 0; i < 99; i++){
-        if(a == b){
-            arr[i] = arr[i+1] + i;
+    for (int i = 0; i < 100; i++) {
+        if((i*i*i)%2 == 0){
+            histogram[(i*i*i)] = i;
+        }else if(i % 5 == 0){
+            histogram[((i+1)*
+                       (i+1)*
+                       (i+1)*
+                       (i+1))] = 30*i;
+        }
+        else if(i % 13 == 0){
+            histogram[((i-1)*
+                       (i-1)*
+                       (i-1)*
+                       (i-1))] = 40*i;
+        }else{
+            histogram[((i-1)*
+                       (i-1)*
+                       (i+2)*
+                       (i+3))] = 50*i; 
         }
     }
-
-}
-
-
-
-int main(int argc, char* argv[]){
-    fp1();    
     return 0;
-
 }
-
-
-

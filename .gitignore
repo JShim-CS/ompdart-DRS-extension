@@ -4,3 +4,7 @@ evaluation/data/*
 !evaluation/data/.gitkeep
 evaluation/rodinia_3.1
 evaluation/rodinia_3.1.tar.bz2
+race.py
+test.c
+test2.c
+drsolver.py
