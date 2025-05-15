@@ -5,7 +5,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "DataTracker.h"
-#include "DrdpragmaHandler.h"
+
 #include "ControlRegions.h"
 #include <unordered_map>
 

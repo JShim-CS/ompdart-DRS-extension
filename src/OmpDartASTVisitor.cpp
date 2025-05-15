@@ -12,8 +12,7 @@
 using namespace clang;
 
 OmpDartASTVisitor::OmpDartASTVisitor(CompilerInstance *CI, unsigned* drdPragmaLineNumber, std::unordered_map<std::string, std::string> *macros)
-    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), 
-    drdPragmaLineNumber(drdPragmaLineNumber), macros(macros) {
+    : Context(&(CI->getASTContext())), SM(&(Context->getSourceManager())), CI(CI), macros(macros) {
   LastKernel = NULL;
   LastFunction = NULL;
   //this->CR = std::make_unique<ControlRegions>().get();

@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
                        (i-1)*
                        (i-1)*
                        (i-1))] = 40*i;
-        }else{
+        }else if (i > 1){
             histogram[((i-1)*
                        (i-1)*
                        (i+2)*

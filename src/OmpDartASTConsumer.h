@@ -18,7 +18,6 @@ class OmpDartASTConsumer : public ASTConsumer {
   Rewriter TheRewriter;
   std::string OutFilePath;
   bool Aggressive;
-  unsigned *drdPragmaLineNumber;
   std::unordered_map<std::string, std::string> *macros;
 
 
@@ -32,7 +31,7 @@ class OmpDartASTConsumer : public ASTConsumer {
   std::unordered_map<std::string,short> diffRequiredMap;
 public:
   explicit OmpDartASTConsumer(CompilerInstance *CI,
-                              const std::string *OutFilePath, bool Aggressive, unsigned* drdPragmaLine, std::unordered_map<std::string, std::string> *macros);
+                              const std::string *OutFilePath, bool Aggressive, std::unordered_map<std::string, std::string> *macros);
 
   virtual void HandleTranslationUnit(ASTContext &Context);
 
