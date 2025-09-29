@@ -1,34 +1,11 @@
 #include <omp.h>
 
 int main(int argc, char *argv[]) {
-    int histogramSize = 200000000;
-    int histogram[histogramSize];
-
-    for (int j = 0; j < histogramSize; j++) {
-        histogram[j] = 0;
-    }
-   
+    int arr[2000];
     #pragma drs
-    for (int i = 0; i < 100; i++) {
-        if((i*i*i)%2 == 0){
-            histogram[(i*i*i)] = i;
-        }else if(i % 5 == 0){
-            histogram[((i+1)*
-                       (i+1)*
-                       (i+1)*
-                       (i+1))] = 30*i;
-        }
-        else if(i % 13 == 0){
-            histogram[((i-1)*
-                       (i-1)*
-                       (i-1)*
-                       (i-1))] = 40*i;
-        }else{
-            histogram[((i-1)*
-                       (i-1)*
-                       (i+2)*
-                       (i+3))] = 50*i; 
-        }
+    for(int i = 0; i < 200; i++){
+        arr[i%20] = 1;
     }
+    
     return 0;
 }

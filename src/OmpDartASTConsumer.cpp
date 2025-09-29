@@ -686,9 +686,11 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       this->separateStringBy(arrIndex,'@',tempArrInfo);
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
         outfile << "wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i) + " = Int(\"" + "wr_arr_index_" + std::to_string(wr_counter)+ "_"+ std::to_string(i) +"\")\n";
+        outfile << "wr_arr_index__" + std::to_string(wr_counter) + "_"+ std::to_string(i) + " = Int(\"" + "wr_arr_index__" + std::to_string(wr_counter)+ "_"+ std::to_string(i) +"\")\n";
         for(auto s : Encoded2Original){
           if(tempArrInfo[2+i].find(s.first) != std::string::npos){
             this->encodedIndexInfo["wr_arr_index_" + std::to_string(wr_counter) + "_"+ std::to_string(i)].push_back(s.first);
+            this->encodedIndexInfo["wr_arr_index__" + std::to_string(wr_counter) + "_"+ std::to_string(i)].push_back(s.first);
           }
         }
       }
@@ -727,6 +729,35 @@ void OmpDartASTConsumer::recordReadAndWrite(){
               if(writtenMap.find(processedLoopPredicate) == writtenMap.end()){
                 if(processedLoopPredicate != ""){
                   outfile << "solver.add(" + processedLoopPredicate+")\n";
+                  
+
+                  std::string original = "drdVar_";
+                  std::string replacement = "drdVar__";
+                  std::string plpCopy = processedLoopPredicate;
+                  std::string encFirstCpy = enc.first;
+
+                  size_t pos1 = plpCopy.find(original); // Find the first occurrence
+                  size_t pos2 = encFirstCpy.find(original);
+
+                  if (pos1 != std::string::npos) { // Check if the substring was found
+                      plpCopy.replace(pos1, original.length(), replacement);
+                  }
+
+                  if (pos2 != std::string::npos) { // Check if the substring was found
+                      encFirstCpy.replace(pos2, original.length(), replacement);
+                  }
+
+                  //do it 2 times because we have upper and lower bounds
+                  pos1 = plpCopy.rfind(original);
+                  if (pos1 != std::string::npos) { // Check if the substring was found
+                      plpCopy.replace(pos1, original.length(), replacement);
+                  }
+
+
+                  outfile << encFirstCpy + " = Int(\"" + encFirstCpy +"\")\n";
+                  outfile << "solver.add(" + plpCopy+")\n";
+                  outfile << "solver.add(" + encFirstCpy + "!=" + enc.first +")\n";
+                  // llvm::outs() << "Loop predicate: solver.add(" + processedLoopPredicate+")\n";
                   writtenMap[processedLoopPredicate] = true;
                 }
               }
@@ -749,9 +780,24 @@ void OmpDartASTConsumer::recordReadAndWrite(){
       }
 
       for(int i = 0; i < std::stoi(tempArrInfo[0]); i++){
+        std::string tmpArrInfoCpy = tempArrInfo[2+i];
+        std::string original = "drdVar_";
+        std::string replacement = "drdVar__";
+        size_t pos1 = tmpArrInfoCpy.find(original); // Find the first occurrence
+        if (pos1 != std::string::npos) { // Check if the substring was found
+            tmpArrInfoCpy.replace(pos1, original.length(), replacement);
+        }         
+
         outfile << "wr_cond_"+ std::to_string(wr_counter) +"_"+std::to_string(i)
                 + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter)+"_"+std::to_string(i)
-               + " == " + tempArrInfo[2+i] +", " + condition + ")\n";
+               + " == " + tempArrInfo[2+i] +", " + condition + "," + "wr_arr_index__" + std::to_string(wr_counter)+"_"+std::to_string(i)
+               + " == " + tmpArrInfoCpy + ")\n";
+        // outfile << "wr_cond_"+ std::to_string(wr_counter) +"_"+std::to_string(i)
+        //         + " = And ("+ "wr_arr_index__" + std::to_string(wr_counter)+"_"+std::to_string(i)
+        //        + " == " + tempArrInfo[2+i] +", " + condition + ")\n";
+        // llvm::outs() << "wr_cond_"+ std::to_string(wr_counter) +"_"+std::to_string(i)
+        //         + " = And ("+ "wr_arr_index_" + std::to_string(wr_counter)+"_"+std::to_string(i)
+        //        + " == " + tempArrInfo[2+i] +", " + condition + ")\n";
 
       }
       
@@ -781,23 +827,38 @@ void OmpDartASTConsumer::recordReadAndWrite(){
     wr_counter = 0;
     std::unordered_map<std::string, bool> wawFinalConds;
     for(int i = 0; i < writeVector.size(); i++){
-      for (int j = i+1; j < writeVector.size(); j++){
+      for (int j = i; j < writeVector.size(); j++){ //changing j=i+1 to j=i
         if(writeVector[i]->at(0) != writeVector[j]->at(0))continue;
         wawFinalConds["waw_cond_" + std::to_string(wr_counter)] = true;
         outfile <<"waw_cond_" + std::to_string(wr_counter) <<" = And( ";
         std::string indexMatchCondition = "";
-        //llvm::outs() << "HAHAHAH1\n";
+       
         int k = 1;
         while(writeVector[i]->at(k).find("wr_cond_") != std::string::npos){
           indexMatchCondition += writeVector[i]->at(k) + ", "+writeVector[j]->at(k) + ",";
           k++;
         }
-        
+        llvm::outs() << writeVector[i]->at(k) << "\n";
+        llvm::outs() << writeVector[j]->at(k) << "\n";
         indexMatchCondition += "\n";
         //indexMatchCondition += ", ";
         for(;k<writeVector[i]->size();k++){
           if(k != writeVector[i]->size()-1){
-            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+            // std::string tmpArrInfoCpy = writeVector[j]->at(k);
+            // std::string original = "index_";
+            // std::string replacement = "index__";
+            // size_t pos1 = tmpArrInfoCpy.find(original); // Find the first occurrence
+            // if (pos1 != std::string::npos) { // Check if the substring was found
+            //     tmpArrInfoCpy.replace(pos1, original.length(), replacement);
+            // }
+              
+            // if(i == j){
+            //   indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+ tmpArrInfoCpy + "), ";
+
+            // }else{
+              indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + "), ";
+            // }
+            
             if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
               for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
                 for(auto idx2 : this->encodedIndexInfo[writeVector[j]->at(k)]){
@@ -807,7 +868,21 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     if(this->diffRequiredMap[idx2] == 1){
                       indexMatchCondition += "(" + idx + " != " + idx2 + "), \n";
                     }else if(this->diffRequiredMap[idx2] == 2){
-                      indexMatchCondition += "(" + idx + " == " + idx2 + "), \n";
+                      // std::string tmpArrInfoCpy = idx2;
+                      // std::string original = "index_";
+                      // std::string replacement = "index__";
+                      // size_t pos1 = tmpArrInfoCpy.find(original); // Find the first occurrence
+                      
+                      // if (pos1 != std::string::npos) { // Check if the substring was found
+                      //     tmpArrInfoCpy.replace(pos1, original.length(), replacement);
+                      // }  
+                      // if(i == j){
+                      //   indexMatchCondition += "(" + idx + " == " + tmpArrInfoCpy + "), \n";
+
+                      // }else{
+                        indexMatchCondition += "(" + idx + " == " + idx2 + "), \n";
+                      // }
+                      
                     }
                   }
               
@@ -818,7 +893,19 @@ void OmpDartASTConsumer::recordReadAndWrite(){
 
             }
           }else{
-            indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+            if(i==j){
+              std::string tmpArrInfoCpy = writeVector[j]->at(k);
+              std::string original = "index_";
+              std::string replacement = "index__";
+              size_t pos1 = tmpArrInfoCpy.find(original); // Find the first occurrence
+              if (pos1 != std::string::npos) { // Check if the substring was found
+                  tmpArrInfoCpy.replace(pos1, original.length(), replacement);
+                  indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+tmpArrInfoCpy + ")";
+              }
+            }else{
+              indexMatchCondition += "(" + writeVector[i]->at(k) + " == "+writeVector[j]->at(k) + ")";
+            }
+            
             if(this->encodedIndexInfo.find(writeVector[i]->at(k)) != this->encodedIndexInfo.end()){
               for(auto idx : this->encodedIndexInfo[writeVector[i]->at(k)]){
                 for(auto idx2 : this->encodedIndexInfo[writeVector[j]->at(k)]){
@@ -828,7 +915,19 @@ void OmpDartASTConsumer::recordReadAndWrite(){
                     if(this->diffRequiredMap[idx2] == 1){
                       indexMatchCondition += ", (" + idx + " != " + idx2 + ")\n";
                     }else if(this->diffRequiredMap[idx2] == 2){
-                      indexMatchCondition += ", (" + idx + " == " + idx2 + ")\n";
+                      // std::string tmpArrInfoCpy = idx2;
+                      // std::string original = "index_";
+                      // std::string replacement = "index__";
+                      // size_t pos1 = tmpArrInfoCpy.find(original); // Find the first occurrence
+                      // if (pos1 != std::string::npos) { // Check if the substring was found
+                      //     tmpArrInfoCpy.replace(pos1, original.length(), replacement);
+                      // }  
+                      // if(i == j){
+                      //   indexMatchCondition += ", (" + idx + " == " + tmpArrInfoCpy + ")\n";
+                      // }else{
+                        indexMatchCondition += ", (" + idx + " == " + idx2 + ")\n";
+                      // }
+                      
                     }
                   }
               
