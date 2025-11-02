@@ -3,7 +3,7 @@ Currently, DRS only supports data race detection on one target loop. Users can s
 
 # Dependencies
 
-[OMPDart](https://github.com/lmarzen/ompdart)
+[OMPDart](https://github.com/lmarzen/ompdart) (included)
 
 Python 3.8.10 (tested)
 
