@@ -3,11 +3,11 @@ Currently, DRS only supports data race detection on one target loop. Users can s
 
 # Dependencies
 
-[OMPDart](https://github.com/lmarzen/ompdart) (included)
-
-Python 3.8.10 (tested)
-
-Z3 Python (4.13.2, but may work with other versions)
+- [OMPDart](https://github.com/lmarzen/ompdart) (included)
+- Python 3.8.10 (tested)
+- Z3 Python (4.13.2, but may work with other versions)
+- Clang 16+ 
+- Boost C++ Libraries
 
 # drsolver.py
 For correct detection results, always delete drsolver.py before running the analysis.
@@ -17,16 +17,9 @@ Below are ReadMe from OMPDART
 
 # OMPDart
 OMPDart - OpenMP Data Reduction Tool
-
-OMPDart is a C/C++ static analysis tool for automatically generating efficient OpenMP GPU data mapping.
-
+OMPDart is a C/C++ static source code transformation tool for automatically generating efficient OpenMP GPU data mapping.
 
 ### Usage
-
-Dependencies:
-- Clang 16+ 
-- Boost C++ Libraries
-
 To build OMPDart run the following script.
 ```bash
 bash build.sh
