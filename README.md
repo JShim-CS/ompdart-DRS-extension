@@ -13,7 +13,7 @@ Currently, DRS only supports data race detection on one target loop. Users can s
 For correct detection results, always delete drsolver.py before running the analysis.
 Uncommmenting line 52 of "run.sh" will automatically delete drsolver.py after the analysis.
 
-Below are ReadMe from OMPDART
+Below is a ReadMe from OMPDART
 
 # OMPDart
 OMPDart - OpenMP Data Reduction Tool
